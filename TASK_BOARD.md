@@ -15,6 +15,18 @@ Contracts v0.1.0 are **FROZEN** — changes only via a Contract Change Request (
 - [x] E0.9 OpenAPI typed client (snapshot + generated TS + drift gate)
 - [~] E0.10 CI gate: `check.sh --smoke` passes locally (incl. real `npm ci` + gitleaks 8.30.1); `.github/workflows/ci.yml` **never executed — no Git remote configured, so CI is externally unverified**. Run it on the first push, before any lane merge is trusted.
 
+## Wave 1 (toward integration checkpoint I1) — **INTERRUPTED 2026-10-16, I1 NOT reached**
+All three implementation agents stopped on an account session rate limit. Partial work is
+committed in `fc424ab` and is green (ruff, strict mypy, import-linter, 123 pytest).
+Resume plan and exact next actions: `docs/phase-reports/wave1-handoff.md`.
+- [x] Lead: repository/UnitOfWork seam `kb_core/db/protocols.py` (frozen for Wave 1)
+- [x] Lead: CCR-001 filed + approved (`docs/ccr/CCR-001.md`) — **not yet executed**
+- [~] Lane C data: table metadata + async engine + CursorPage done; **repositories, UnitOfWork, seed policy v1, Qdrant collections/rebuild, DB tests all outstanding**
+- [~] Lane E outreach: 21-site fixture corpus (all 5 label classes) + MockSearch + MockCrawler + html_to_text done; **SEOMetricsProvider, ManualImport CSV, canonicalization/dedupe, research extraction, contact extraction, all tests outstanding**
+- [ ] Lane B backend: **nothing landed.** PolicyEngine, hard eligibility + DEFER, suppression, idempotency, PostgresJobQueue, TransitionService, campaign/prospect APIs, approvals, kill switch
+- [ ] Lane D agent runtime (batch 2, never launched): Ollama + Fake providers, ToolGateway + scope enforcement, Discovery/Qualification/Research/Contact agents, run persistence
+- [ ] Lead: CCR-001 execution (CONTRACT_VERSION -> 0.2.0, OpenAPI + TS regen, changelog), I1 pipeline wiring, I1 checkpoint commit
+
 ## Epic 1 Campaign/Data
 - [ ] campaign schema/API/UI
 - [ ] prospect schema/API/UI
