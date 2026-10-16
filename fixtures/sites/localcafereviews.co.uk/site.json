@@ -1,0 +1,13 @@
+{
+  "domain": "localcafereviews.co.uk",
+  "pages": {
+    "/": "index.html",
+    "/contact": "contact.html"
+  },
+  "labels": {
+    "rejected": true
+  },
+  "robots_allowed": true,
+  "fetched_at": "2026-01-05T00:00:00Z",
+  "notes": "Fails the DA or spam-score threshold; robots disallowed for the garden fixture."
+}

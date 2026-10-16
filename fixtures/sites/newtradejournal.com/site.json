@@ -1,0 +1,16 @@
+{
+  "domain": "newtradejournal.com",
+  "pages": {
+    "/": "index.html",
+    "/about": "about.html",
+    "/write-for-us": "write-for-us.html",
+    "/contact": "contact.html",
+    "/blog/tariff-schedule-notes": "article.html"
+  },
+  "labels": {
+    "missing_metrics": true
+  },
+  "robots_allowed": true,
+  "fetched_at": "2026-01-05T00:00:00Z",
+  "notes": "At least one required metric has a blank value in the metrics CSV (DEFERRED)."
+}

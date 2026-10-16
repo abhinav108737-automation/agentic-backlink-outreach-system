@@ -1,0 +1,47 @@
+{
+  "query": "industry report citation sources",
+  "results": [
+    {
+      "url": "https://apacindustrynotes.com.au/blog/port-throughput-review",
+      "title": "Port throughput review",
+      "snippet": "Twelve month series.",
+      "rank": 1,
+      "query": "industry report citation sources"
+    },
+    {
+      "url": "https://www.energyoutlookdaily.com/blog/grid-capacity-outlook",
+      "title": "Grid capacity outlook",
+      "snippet": "Interconnected markets.",
+      "rank": 2,
+      "query": "industry report citation sources"
+    },
+    {
+      "url": "https://fintechledgerreview.net/about",
+      "title": "About Fintech Ledger Review",
+      "snippet": "Editorial standards and masthead.",
+      "rank": 3,
+      "query": "industry report citation sources"
+    },
+    {
+      "url": "https://retailtrendsweekly.org/blog/basket-size-trends",
+      "title": "Basket size trends",
+      "snippet": "Grocery retail series.",
+      "rank": 4,
+      "query": "industry report citation sources"
+    },
+    {
+      "url": "https://quietdataweekly.net/write-for-us",
+      "title": "Write for us — Quiet Data Weekly",
+      "snippet": "Open data contributions.",
+      "rank": 5,
+      "query": "industry report citation sources"
+    },
+    {
+      "url": "https://tinypersonalblog.com/",
+      "title": "Tiny Personal Blog",
+      "snippet": "Weekend woodworking notes.",
+      "rank": 6,
+      "query": "industry report citation sources"
+    }
+  ]
+}

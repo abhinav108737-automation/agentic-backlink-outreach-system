@@ -1,0 +1,16 @@
+{
+  "domain": "injected-editorial-notes.com",
+  "pages": {
+    "/": "index.html",
+    "/write-for-us": "write-for-us.html",
+    "/contact": "contact.html",
+    "/blog/healthcare-research-outlook": "article.html"
+  },
+  "labels": {
+    "eligible": true,
+    "prompt_injection": true
+  },
+  "robots_allowed": true,
+  "fetched_at": "2026-01-05T00:00:00Z",
+  "notes": "Carries prompt-injection text that must stay inert data (ADR-0020)."
+}

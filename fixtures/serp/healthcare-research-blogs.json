@@ -1,0 +1,26 @@
+{
+  "query": "healthcare research blogs",
+  "results": [
+    {
+      "url": "https://injected-editorial-notes.com/",
+      "title": "Injected Editorial Notes",
+      "snippet": "Healthcare research notes.",
+      "rank": 1,
+      "query": "healthcare research blogs"
+    },
+    {
+      "url": "https://research-roundup-inject.org/",
+      "title": "Research Roundup",
+      "snippet": "Education research roundup.",
+      "rank": 2,
+      "query": "healthcare research blogs"
+    },
+    {
+      "url": "https://contact-page-inject.io/contact",
+      "title": "Contact Page Inject",
+      "snippet": "Transport research desk.",
+      "rank": 3,
+      "query": "healthcare research blogs"
+    }
+  ]
+}

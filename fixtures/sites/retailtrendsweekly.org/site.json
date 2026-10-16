@@ -1,0 +1,16 @@
+{
+  "domain": "retailtrendsweekly.org",
+  "pages": {
+    "/": "index.html",
+    "/about": "about.html",
+    "/write-for-us": "write-for-us.html",
+    "/contact": "contact.html",
+    "/blog/basket-size-trends": "article.html"
+  },
+  "labels": {
+    "eligible": true
+  },
+  "robots_allowed": true,
+  "fetched_at": "2026-01-05T00:00:00Z",
+  "notes": "DA above threshold, spam score below threshold, guest-post page present."
+}

@@ -1,0 +1,14 @@
+{
+  "domain": "guestpost-marketplace.info",
+  "pages": {
+    "/": "index.html",
+    "/pricing": "pricing.html",
+    "/contact": "contact.html"
+  },
+  "labels": {
+    "spammy": true
+  },
+  "robots_allowed": true,
+  "fetched_at": "2026-01-05T00:00:00Z",
+  "notes": "High spam score, link-selling content."
+}

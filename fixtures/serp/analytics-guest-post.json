@@ -1,0 +1,40 @@
+{
+  "query": "analytics guest post",
+  "results": [
+    {
+      "url": "https://blog.datapulseanalytics.io/write-for-us",
+      "title": "Write for us — DataPulse Analytics Blog",
+      "snippet": "Contributed analytics research.",
+      "rank": 1,
+      "query": "analytics guest post"
+    },
+    {
+      "url": "https://blog.datapulseanalytics.io/blog/attribution-models-compared/",
+      "title": "Attribution models compared",
+      "snippet": "Four datasets compared.",
+      "rank": 2,
+      "query": "analytics guest post"
+    },
+    {
+      "url": "https://supplychainlens.io/write-for-us",
+      "title": "Write for us — Supply Chain Lens",
+      "snippet": "Supply chain research contributions.",
+      "rank": 3,
+      "query": "analytics guest post"
+    },
+    {
+      "url": "https://guestpost-marketplace.info/pricing",
+      "title": "Link packages — Guestpost Marketplace",
+      "snippet": "Bulk discounts, dofollow links.",
+      "rank": 4,
+      "query": "analytics guest post"
+    },
+    {
+      "url": "https://emergingmarketspulse.io/write-for-us",
+      "title": "Write for us — Emerging Markets Pulse",
+      "snippet": "Emerging market research contributions.",
+      "rank": 5,
+      "query": "analytics guest post"
+    }
+  ]
+}

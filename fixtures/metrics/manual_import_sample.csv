@@ -1,0 +1,6 @@
+domain,metric,value,source,fetched_at
+manualimport-one.example,domain_authority,66.5,manual_import,2026-01-05T00:00:00Z
+manualimport-one.example,spam_score,0.4,manual_import,2026-01-05T00:00:00Z
+manualimport-two.example,domain_authority,,manual_import,2026-01-05T00:00:00Z
+manualimport-two.example,spam_score,0.8,manual_import,2026-01-05T00:00:00Z
+MANUALIMPORT-THREE.EXAMPLE , spam_score , 1.9 ,manual_import,2026-01-05T00:00:00Z
