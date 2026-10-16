@@ -4,11 +4,15 @@ Status: canonical (ADR-0011). Baseline is the PRD/TRD §15 model, normalized; no
 
 ## Conventions
 - PostgreSQL is authoritative. Qdrant is derived.
-- Primary keys: UUIDv7 (`id uuid`). Timestamps: `timestamptz` in UTC; `created_at`, `updated_at` on every table.
+- Primary keys: `id uuid`. The application generates UUIDv7; the DB default `gen_random_uuid()` (v4) is only a fallback. Timestamps: `timestamptz` in UTC; `created_at`, `updated_at` on every table.
 - Mutable aggregates carry `version int` (optimistic locking). Lifecycle columns are named `status` and use the enum of their bounded machine.
 - Tables are plural snake_case; FK columns are `<entity>_id`. Archive (status/`archived_at`) instead of hard delete.
 - Rows created by a mutation carry `correlation_id`. Agent-produced rows carry `agent_run_id`. Policy-dependent rows carry `policy_version_id`.
-- Append-only tables (`audit_events`, `outreach_events`, `domain_metrics`, `backlink_verifications`, `policy_versions`, `report_snapshots`) reject UPDATE/DELETE (DB trigger for `audit_events`; repository-level for others).
+- Append-only tables (`audit_events`, `outreach_events`, `domain_metrics`, `backlink_verifications`, `report_snapshots`) reject UPDATE/DELETE/TRUNCATE via DB triggers.
+- Guarded tables reject DELETE/TRUNCATE and allow UPDATE of named columns only: `suppression_entries` (`superseded_at`, `superseded_by`) and `policy_versions` (`status`, `approved_by`, `approved_at`; body and hash are immutable).
+- `outreach_messages` enforces at most one live (QUEUED/SENDING/RETRY_WAIT/SENT/DELIVERED) message per `(sequence_id, step_no)` in addition to the unique idempotency key.
+- `suppression_entries.value_normalized` must already be `lower(btrim(...))`.
+- Known V1 hardening (not in 001): the application connects as a non-owner role without TRIGGER/DISABLE rights so these guards cannot be removed by application SQL.
 - PII minimization: store only contact data needed for outreach; normalize emails (lowercase, trimmed); never put secrets in DB rows (`secret_ref` points to the OS keyring).
 - Every migration has a tested up/down/up path.
 

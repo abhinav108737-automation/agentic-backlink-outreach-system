@@ -1,0 +1,17 @@
+{
+  "name": "@ken/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generated TypeScript types for the FastAPI OpenAPI snapshot. Never hand-edit src/api.d.ts.",
+  "type": "module",
+  "types": "src/index.ts",
+  "main": "src/index.ts",
+  "scripts": {
+    "generate": "openapi-typescript ../openapi/openapi.json -o src/api.d.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "generate:to": "openapi-typescript ../openapi/openapi.json -o"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "ken-backlink-os",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Ken Research Agentic AI Backlink Outreach System (npm workspace root)",
+  "workspaces": ["contracts/generated_ts", "apps/desktop"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "lint": "npm run lint -w @ken/desktop",
+    "typecheck": "npm run typecheck -w @ken/contracts && npm run typecheck -w @ken/desktop",
+    "test": "npm run test -w @ken/desktop",
+    "gen:contracts": "npm run generate -w @ken/contracts"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

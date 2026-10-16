@@ -1,0 +1,12 @@
+[project]
+name = "kb-api"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["kb-contracts", "kb-core", "kb-providers", "fastapi>=0.115", "uvicorn>=0.32", "httpx>=0.27", "asyncpg>=0.30", "sqlalchemy[asyncio]>=2.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kb_api"]

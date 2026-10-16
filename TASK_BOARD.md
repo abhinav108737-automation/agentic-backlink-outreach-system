@@ -1,16 +1,18 @@
 # Implementation Task Board
 
-## Epic 0 Foundation
-- [ ] E0.1 git/monorepo
-- [ ] E0.2 Electron + React + TS shell
-- [ ] E0.3 FastAPI skeleton
-- [ ] E0.4 PostgreSQL + Alembic
-- [ ] E0.5 Qdrant
-- [ ] E0.6 Docker Compose
-- [ ] E0.7 config/secrets abstraction
-- [ ] E0.8 logs/correlation IDs
-- [ ] E0.9 OpenAPI typed client
-- [ ] E0.10 CI gate
+Legend: `[x]` done and verified · `[~]` partially done (note says what remains) · `[ ]` not started.
+
+## Epic 0 Foundation (Foundation Gate G0.3-G0.9: see docs/phase-reports/foundation.md)
+- [x] E0.1 git/monorepo (uv workspace on Python 3.12 + npm workspaces; import-linter boundaries)
+- [x] E0.2 Electron + React + TS shell (hardened window, preload bridge, real-Electron smoke verified)
+- [x] E0.3 FastAPI skeleton (per-launch auth, Host/Origin guards, problem+json, route stubs for PRD §22)
+- [x] E0.4 PostgreSQL + Alembic (migration 001: 48 tables, append-only triggers, up/down/up tested)
+- [~] E0.5 Qdrant: dev container + readiness probe done; collections, indexing and rebuild command are Lane C
+- [x] E0.6 Docker Compose (PostgreSQL 55432, Qdrant 56333; dev only)
+- [~] E0.7 config/secrets abstraction: typed Settings, redaction and SecretStore protocol done; Env/keyring implementations are Lane B
+- [x] E0.8 logs/correlation IDs (structured JSON, redaction, X-Correlation-ID propagation)
+- [x] E0.9 OpenAPI typed client (snapshot + generated TS + drift gate)
+- [~] E0.10 CI gate: `infrastructure/scripts/check.sh` passes locally; `.github/workflows/ci.yml` written but not yet run on GitHub
 
 ## Epic 1 Campaign/Data
 - [ ] campaign schema/API/UI
@@ -63,6 +65,9 @@
 
 ## Epic 7 Hardening/Packaging
 - [ ] security/prompt injection
+- [ ] DB role separation: non-owner `kb_app` role without TRIGGER/ALTER rights so append-only and guard triggers cannot be dropped by app SQL (security review H2, docs/phase-reports/foundation.md)
+- [ ] serve renderer from a custom protocol so CSP is a real header (security review M8)
+- [ ] CI hardening: SHA-pinned actions, npm audit / pip-audit, gitleaks, Electron smoke under xvfb
 - [ ] Electron security
 - [ ] performance/failure tests
 - [ ] Windows/macOS packages

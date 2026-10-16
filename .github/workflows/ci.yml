@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: backlink, POSTGRES_PASSWORD: backlink, POSTGRES_DB: backlink }
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U backlink -d backlink" --health-interval 3s
+          --health-timeout 3s --health-retries 20
+      qdrant:
+        image: qdrant/qdrant:v1.12.4
+        ports: ["56333:6333"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      # No live credentials, no Ollama, no real providers: readiness degrades gracefully.
+      - run: infrastructure/scripts/check.sh --ci

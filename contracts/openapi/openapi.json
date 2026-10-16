@@ -1,0 +1,541 @@
+{
+  "components": {
+    "schemas": {
+      "ComponentHealth": {
+        "properties": {
+          "critical": {
+            "title": "Critical",
+            "type": "boolean"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "critical"
+        ],
+        "title": "ComponentHealth",
+        "type": "object"
+      },
+      "ReadinessReport": {
+        "properties": {
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentHealth"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "components"
+        ],
+        "title": "ReadinessReport",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Ken Backlink OS API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/agent-runs": {
+      "get": {
+        "operationId": "listAgentRuns",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listagentruns",
+        "tags": [
+          "Agent Runs"
+        ]
+      }
+    },
+    "/approvals": {
+      "get": {
+        "operationId": "listApprovals",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listapprovals",
+        "tags": [
+          "Approvals"
+        ]
+      }
+    },
+    "/approvals/{approval_id}/decide": {
+      "post": {
+        "operationId": "decideApproval",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Decideapproval",
+        "tags": [
+          "Approvals"
+        ]
+      }
+    },
+    "/backlinks/{backlink_id}/verify": {
+      "post": {
+        "operationId": "verifyBacklink",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Verifybacklink",
+        "tags": [
+          "Backlinks"
+        ]
+      }
+    },
+    "/campaigns": {
+      "post": {
+        "operationId": "createCampaign",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Createcampaign",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/campaigns/{campaign_id}": {
+      "get": {
+        "operationId": "getCampaign",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Getcampaign",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/campaigns/{campaign_id}/pause": {
+      "post": {
+        "operationId": "pauseCampaign",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Pausecampaign",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/campaigns/{campaign_id}/run": {
+      "post": {
+        "operationId": "runCampaign",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Runcampaign",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/experiments": {
+      "get": {
+        "operationId": "listExperiments",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listexperiments",
+        "tags": [
+          "Experiments"
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "healthLive",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Healthlive",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Live",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "healthReady",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ready",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/messages/{message_id}/approve": {
+      "post": {
+        "operationId": "approveMessage",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Approvemessage",
+        "tags": [
+          "Outreach"
+        ]
+      }
+    },
+    "/messages/{message_id}/send": {
+      "post": {
+        "operationId": "sendMessage",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sendmessage",
+        "tags": [
+          "Outreach"
+        ]
+      }
+    },
+    "/optimization-proposals/{proposal_id}/promote": {
+      "post": {
+        "operationId": "promoteProposal",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Promoteproposal",
+        "tags": [
+          "Optimization"
+        ]
+      }
+    },
+    "/prospects": {
+      "get": {
+        "operationId": "listProspects",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listprospects",
+        "tags": [
+          "Prospects"
+        ]
+      }
+    },
+    "/prospects/{prospect_id}": {
+      "get": {
+        "operationId": "getProspect",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Getprospect",
+        "tags": [
+          "Prospects"
+        ]
+      }
+    },
+    "/prospects/{prospect_id}/draft-outreach": {
+      "post": {
+        "operationId": "draftOutreach",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Draftoutreach",
+        "tags": [
+          "Prospects"
+        ]
+      }
+    },
+    "/prospects/{prospect_id}/research": {
+      "post": {
+        "operationId": "researchProspect",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Researchprospect",
+        "tags": [
+          "Prospects"
+        ]
+      }
+    },
+    "/providers": {
+      "get": {
+        "operationId": "listProviders",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listproviders",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/reports/weekly": {
+      "get": {
+        "operationId": "getWeeklyReport",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Getweeklyreport",
+        "tags": [
+          "Reports"
+        ]
+      }
+    },
+    "/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Getsettings",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "put": {
+        "operationId": "updateSettings",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Updatesettings",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/system/health": {
+      "get": {
+        "operationId": "systemHealth",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Systemhealth",
+        "tags": [
+          "System"
+        ]
+      }
+    },
+    "/threads/{thread_id}": {
+      "get": {
+        "operationId": "getThread",
+        "responses": {
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Getthread",
+        "tags": [
+          "Outreach"
+        ]
+      }
+    }
+  }
+}

@@ -53,6 +53,7 @@ Guard: entering any terminal state cancels the sequence's pending `scheduled_job
 | QA_PASSED | PENDING_APPROVAL, APPROVED | approval required by mode/policy (guarded) |
 | PENDING_APPROVAL | APPROVED, REJECTED | operator decision (`approval_requests`) |
 | APPROVED | QUEUED, POLICY_BLOCKED, CANCELLED | policy gate re-checked at enqueue |
+| DRAFT, QA_FAILED, QA_PASSED, PENDING_APPROVAL, RETRY_WAIT | CANCELLED | a terminal sequence cancels all not-yet-sent work in the same transaction |
 | QUEUED | SENDING, CANCELLED, POLICY_BLOCKED | policy gate re-checked immediately before send; kill switch |
 | SENDING | SENT, RETRY_WAIT, FAILED | provider result; idempotency key |
 | RETRY_WAIT | QUEUED | attempts < max (bounded) |
@@ -105,7 +106,7 @@ Risk-class guards (ADR-0006):
 - **L2** (subject lines, templates, ranking weights, timing, contact prioritization): must pass SHADOW and then CANARY or EXPERIMENT.
 - **L3** (hard qualification thresholds, suppression, send limits, compliance, binding negotiation policy): PROMOTED requires an APPROVED `approval_requests` row **and** a passing evaluation. Never silent.
 
-Terminal: REJECTED, ROLLED_BACK. Every promotion records evidence, evaluator, versions and rollback target.
+Terminal: REJECTED, ROLLED_BACK. MONITORED is the steady state of a promoted version (its only exit is rollback; completing monitoring is not a transition). Every promotion records evidence, evaluator, versions and rollback target.
 
 ## 6. Workflow and job lifecycle
 **`workflow_runs.status`**
@@ -113,9 +114,9 @@ Terminal: REJECTED, ROLLED_BACK. Every promotion records evidence, evaluator, ve
 |---|---|
 | PENDING | RUNNING, CANCELLED |
 | RUNNING | WAITING, SUCCEEDED, FAILED, CANCELLED |
-| WAITING | RUNNING, CANCELLED |
+| WAITING | RUNNING, FAILED, CANCELLED |
 
-Terminal: SUCCEEDED, FAILED, CANCELLED. WAITING covers timers, human approvals and external events.
+Terminal: SUCCEEDED, FAILED, CANCELLED. WAITING covers timers, human approvals and external events; WAITING -> FAILED covers approval/timer expiry.
 
 **`scheduled_jobs.status`**
 | From | To | Guard / note |

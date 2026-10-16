@@ -81,7 +81,7 @@ After MVP:
 - [ ] Work is on a `foundation/*` branch with a clean tree. `.claude/` (8 agents, 3 rules, 3 skills) and `.env.example` are present and validated. Canonical reference image in place. Hygiene done.
 - [ ] ADRs written and indexed; registry has no duplicate IDs and a complete v0 mapping; `docs/*.md` reconciled.
 - [ ] `uv sync` (Python 3.12) and `npm ci` succeed. ruff, mypy (strict on `kb_*`), pytest, eslint, tsc, vitest and import-linter pass.
-- [ ] Compose dev stack healthy: PostgreSQL on 55432, Qdrant on 6333.
+- [ ] Compose dev stack healthy: PostgreSQL on 55432, Qdrant on 56333.
 - [ ] Migration 001 builds the full docs/04 schema; up/down/up test passes; audit trigger rejects UPDATE and DELETE.
 - [ ] Contracts v0.1 in place; exhaustive invalid-transition tests pass for all six machines plus campaign.
 - [ ] OpenAPI snapshot committed, TS client generated, drift check passes.

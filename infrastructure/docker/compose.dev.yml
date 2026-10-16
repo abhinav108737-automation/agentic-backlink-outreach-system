@@ -1,0 +1,23 @@
+# Development services only. Docker is NOT an end-user requirement (ADR-0019).
+name: ken-backlink-dev
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: backlink
+      POSTGRES_PASSWORD: backlink   # dev-only placeholder, never a real credential
+      POSTGRES_DB: backlink
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backlink -d backlink"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    ports: ["127.0.0.1:56333:6333"]
+    volumes: ["qdrantdata:/qdrant/storage"]
+volumes:
+  pgdata:
+  qdrantdata:

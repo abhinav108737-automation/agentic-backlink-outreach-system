@@ -63,7 +63,7 @@ L8 Optimization feedback
 | Untrusted content | Crawled pages and email bodies are data, never instructions | 0020 |
 
 ## Process topology
-- **Development:** Docker Compose runs PostgreSQL (host port 55432) and Qdrant (6333). Ollama runs on the host. Electron main spawns the FastAPI backend; the job worker runs in-process as an asyncio task.
+- **Development:** Docker Compose runs PostgreSQL (host port 55432) and Qdrant (56333). Ollama runs on the host. Electron main spawns the FastAPI backend; the job worker runs in-process as an asyncio task.
 - **Production:** packaged Electron app supervises the bundled backend. How PostgreSQL, Qdrant and the Python backend are distributed is decided by the packaging spike (ADR-0019, Proposed). Docker is a development dependency only.
 
 ## Electron security baseline
