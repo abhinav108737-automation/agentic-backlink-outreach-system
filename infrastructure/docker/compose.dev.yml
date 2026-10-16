@@ -16,7 +16,8 @@ services:
       retries: 20
   qdrant:
     image: qdrant/qdrant:v1.12.4
-    ports: ["127.0.0.1:56333:6333"]
+    # Host port is configurable; the service port inside the container is always 6333.
+    ports: ["127.0.0.1:${QDRANT_HOST_PORT:-6333}:6333"]
     volumes: ["qdrantdata:/qdrant/storage"]
 volumes:
   pgdata:

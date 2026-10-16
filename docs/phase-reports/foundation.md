@@ -1,10 +1,11 @@
 # Phase Report — Foundation Gate (G0.3–G0.9)
 
-Branch `foundation/g0-gate` · base `baa5a7e` · contracts version `0.1.0` · 2026-10-16
+Branch `foundation/g0-gate` · base `baa5a7e` · contracts version `0.1.0` (**FROZEN**) · 2026-10-16
+Includes the stabilization pass of 2026-10-16 that closed the gate's conditional items (see "Stabilization pass").
 Executed by the Level-0 Lead. No child subagents were used for implementation; `qa-engineer` and `security-reviewer` were run as independent read-only reviewers (phase-gate steps 3–4).
 
 ## Verdict
-**Foundation Gate: PASSED, with the explicit exceptions listed under "Not verified / deviations".** All local gates are green via `infrastructure/scripts/check.sh --smoke`. Lanes A–F have **not** been launched.
+**Foundation Gate: ACCEPTED.** Every conditional item from the first review is closed except one, which cannot be closed on this machine: **CI remains externally unverified** because the repository has no Git remote (decision 4 forbids inventing one). Contracts v0.1.0 are frozen. All local gates are green via `infrastructure/scripts/check.sh --smoke`, now including a real `npm ci` and gitleaks. Lanes A–F have **not** been launched.
 
 ## Deliverables
 | Task | Delivered |
@@ -17,10 +18,10 @@ Executed by the Level-0 Lead. No child subagents were used for implementation; `
 | G0.8 Codegen | deterministic OpenAPI snapshot, generated TS client, drift gate (verified to detect injected drift) |
 | G0.9 Gate | `check.sh`, registry check, secret scan, CI workflow |
 
-## Results (last full run, `check.sh --smoke`, exit 0)
+## Results (stabilization run, `check.sh --smoke`, exit 0, 2026-10-16)
 | Gate | Result |
 |---|---|
-| ruff check / format | clean, 108 files |
+| ruff check / format | clean, 109 files |
 | mypy strict (`kb_*`) | 41 files, no issues |
 | import-linter | 3 contracts kept; **verified to fail on a deliberate violation** |
 | pytest | **123 passed** (contract 64, security 40, integration 19) |
@@ -28,6 +29,9 @@ Executed by the Level-0 Lead. No child subagents were used for implementation; `
 | eslint / tsc | clean |
 | contract drift | OpenAPI + TS in sync |
 | requirements registry | 52 IDs, 0 duplicates, 20/20 v0 IDs mapped; 12 referenced by tests, 40 warn-only until MVP |
+| secret scan | **gitleaks 8.30.1 clean** — history (5 commits) + working tree, scope narrowed by `.gitleaks.toml` |
+| `npm ci` | **real install from a wiped `node_modules`, exit 0** |
+| dev stack | PostgreSQL + Qdrant healthy with the host port taken from `QDRANT_HOST_PORT` |
 | real Electron smoke | `SMOKE_OK`: renderer has only the 3 bridge methods; `require`, `process`, `Buffer` undefined; backend spawned by main; `/health/ready` 200, `/health/live` 200; no orphan processes afterwards |
 
 ## Acceptance criteria (docs/10 §5)
@@ -36,9 +40,9 @@ Executed by the Level-0 Lead. No child subagents were used for implementation; `
 | Branch, `.claude/`, `.env.example`, image, hygiene | ✅ |
 | ADRs + registry + docs reconciled | ✅ |
 | `uv sync` (3.12) | ✅ frozen lockfile |
-| `npm ci` | ⚠️ `npm ci --dry-run` passes; a real `npm ci` has not been executed (see below) |
+| `npm ci` | ✅ real `npm ci` executed from a wiped `node_modules`, exit 0 |
 | ruff, mypy, pytest, eslint, tsc, vitest, import-linter | ✅ |
-| Compose stack healthy | ✅ PostgreSQL 55432, Qdrant **56333** |
+| Compose stack healthy | ✅ PostgreSQL 55432; Qdrant host port via `QDRANT_HOST_PORT` (default 6333, **56333** on this machine) |
 | Migration 001 full schema, up/down/up, audit trigger | ✅ |
 | Contracts + exhaustive invalid-transition tests, all machines | ✅ plus independent golden tables |
 | OpenAPI snapshot, TS client, drift check | ✅ |
@@ -46,8 +50,8 @@ Executed by the Level-0 Lead. No child subagents were used for implementation; `
 | `/health/ready` PG + Qdrant + Ollama; Ollama absent = degraded | ✅ |
 | Electron spawns backend, handshake, health via bridge, hardening flags, renderer cannot read token | ✅ locally (real Electron + fake-IPC test); ❌ not in CI |
 | Defaults `REAL_SEND_ENABLED=false`, `shadow` | ✅ now also fail-closed (see fixes) |
-| Secret scan "gitleaks clean" | ⚠️ **not met as written**: gitleaks is not installed; the built-in pattern fallback ran clean |
-| `check.sh` runs every gate; CI needs no credentials/Ollama | ✅ locally; ⚠️ CI workflow written but never executed |
+| Secret scan "gitleaks clean" | ✅ met as written: gitleaks 8.30.1 installed and clean (history + working tree) |
+| `check.sh` runs every gate; CI needs no credentials/Ollama | ✅ locally; ⚠️ **CI workflow still never executed — no Git remote exists** |
 | phase-gate, QA + security reviews, report, checkpoint | ✅ |
 
 ## Independent review outcomes
@@ -77,23 +81,50 @@ Executed by the Level-0 Lead. No child subagents were used for implementation; `
 | — | Electron hardening unproven in CI | **Open**: smoke is local-only |
 
 ## Not verified / deviations (read these)
-1. **Qdrant host port is 56333, not 6333.** 6333 is held by the unrelated `ken-interlink-qdrant-1` container from the Internal Linking project; it was left untouched. Config, compose and docs were updated.
+1. **Qdrant host port is configurable, not fixed.** The container/service port is always 6333. The dev-compose host port comes from `QDRANT_HOST_PORT` (default 6333) and `QDRANT_URL` must match it. On this machine both are set to **56333** in a local, gitignored `.env`, because 6333 is held by the unrelated `ken-interlink-qdrant-1` container from the Internal Linking project, which was left untouched. 56333 is a local fact, not architecture.
 2. **Qdrant down ⇒ `degraded`, not failure** (derived/rebuildable per ADR-0003). The criterion only named Ollama explicitly; only PostgreSQL failure returns 503.
-3. **Secret scan is the built-in fallback**, not gitleaks. It exempts `tests/` and known dev placeholders.
-4. **CI has never run.** `.github/workflows/ci.yml` is unexecuted, uses tag-pinned actions, and omits `--smoke` (needs a display on Linux).
-5. **`npm ci` not executed.** npm 11.20 gates dependency install scripts; Electron's binary was fetched lazily on first launch rather than at install. Vitest does not need it; smoke does.
-6. **`ELECTRON_RUN_AS_NODE` is set in this VS Code environment**; the smoke script unsets it. Any other harness launching Electron must do the same. Smoke uses `env -u`, so it is macOS/Linux-only for now.
+3. **Secret scan is gitleaks** (8.30.1, installed via Homebrew). `secret-scan.sh` runs two passes — `gitleaks git` over commit history and `gitleaks dir` over the working tree — because a secret deleted in a later commit still leaks, and uncommitted files never reach the history pass. `.gitleaks.toml` extends the upstream default ruleset and only narrows *where* it looks (vendored deps, build output, lockfiles, generated client, verbatim reference docs). The built-in pattern fallback is retained for machines without gitleaks and labels itself as the weaker engine.
+4. **CI has never run, and cannot be run from here.** The repository has **no Git remote** (`git remote -v` is empty) and decision 4 forbids inventing or creating one. `.github/workflows/ci.yml` therefore remains **externally unverified**: never executed, tag-pinned actions, and no `--smoke` step (needs a display on Linux). It must be run on the first push, before lane merges are trusted.
+5. **`npm ci` executed for real.** `node_modules` (root and workspaces) was deleted and rebuilt from `package-lock.json`, exit 0. npm 11.20 still gates dependency install scripts, so Electron's binary is fetched lazily on first launch rather than at install; vitest does not need it and the smoke run after `npm ci` succeeded.
+6. **`ELECTRON_RUN_AS_NODE` is set in this VS Code environment**; the smoke script unsets it with `env -u`, which is the approved workaround for macOS/Linux development (decision 9). `env -u` is not available on Windows `cmd`/PowerShell, so **a Windows-compatible way to clear `ELECTRON_RUN_AS_NODE` in the smoke script is required before Windows packaging** (recorded in TASK_BOARD Epic 7). Any other harness launching Electron must clear the variable too.
 7. **Route stubs return 501 with untyped bodies**, so the generated TS client types only the health endpoints precisely. Lanes tighten response models via contract change requests.
 8. **SecretStore and JobQueue are protocols only**; no Env/keyring or PostgreSQL queue implementation yet (Lane B).
-9. **Contract changes made during review (pre-freeze):** message CANCELLED edges, workflow WAITING→FAILED. Version stays `0.1.0` because nothing consumed it yet.
+9. **Contract changes made during review (pre-freeze):** message CANCELLED edges, workflow WAITING→FAILED, the `real_send_enabled` validator, and the `qdrant_url` default. Version stays `0.1.0` because nothing consumed it yet. **Contracts v0.1.0 are now frozen** (decision 1): `contracts/CHANGELOG.md` records the freeze, and further changes require a Contract Change Request per docs/14 §"Contract change process" — CCR to the Lead, version bump, changelog entry, OpenAPI + TS regeneration.
 10. `MONITORED` is documented as the steady state of a promoted version (its only exit is rollback).
 11. Migration 001 was regenerated several times pre-release; the dev database was rebuilt from the final version (it held no data).
 
-## Decisions needed before launching lanes
-1. **Freeze contracts v0.1 as-is?** (Recommended: yes.)
-2. **Install gitleaks** (and run CI once) to meet the "gitleaks clean" criterion literally?
-3. **Defer H2 (role separation) and M8 (custom-protocol CSP) to V1 hardening** as recorded? (Recommended: yes.)
-4. Whether to **push the branch / open a PR** so CI can run, since nothing has been pushed.
+## Stabilization pass (2026-10-16)
+The gate was conditionally accepted; this pass executed only the named stabilization work. No
+features were added and no lane was started.
+
+| # | Decision | Outcome |
+|---|---|---|
+| 1 | Freeze contracts v0.1 as implemented | **Done.** `contracts/CHANGELOG.md` created with the `0.1.0 — FROZEN` entry; changes now require a CCR (docs/14). |
+| 2 | Install and run gitleaks locally | **Done.** gitleaks 8.30.1; `secret-scan.sh` runs history + working-tree passes; `.gitleaks.toml` added; clean. |
+| 3 | Run a real `npm ci` | **Done.** `node_modules` wiped and reinstalled from the lockfile, exit 0; the workspace reconstructs from a clean dependency state. |
+| 4 | Run CI once if a safe remote exists | **Not possible.** No Git remote is configured; none was invented. **CI remains externally unverified.** |
+| 5 | Make the Qdrant host port configurable | **Done.** `QDRANT_HOST_PORT` (default 6333) in `compose.dev.yml`; `qdrant_url` default is now `http://localhost:6333`; `.env.example`, docs and the contract test updated; 56333 kept as a local `.env` override only. |
+| 6 | Keep health semantics (PG = readiness failure, Qdrant = degraded) | **Kept, verified.** `health.py` marks only PostgreSQL critical; tests assert Qdrant down ⇒ `degraded` / 200 and PostgreSQL down ⇒ 503. |
+| 7 | Defer DB role separation to V1 hardening, as a live-send blocker | **Recorded** below and in TASK_BOARD Epic 7. |
+| 8 | Defer custom-protocol CSP to V1 packaging/hardening, as a packaging gate | **Recorded** below and in TASK_BOARD Epic 7. |
+| 9 | Keep `env -u ELECTRON_RUN_AS_NODE`; Windows handling required before Windows packaging | **Kept and recorded** (deviation 6, TASK_BOARD Epic 7). |
+| 10 | No features, no lanes A–F during this pass | **Honoured.** Changes were limited to config, docs, one contract-test assertion, the secret-scan script and this report. |
+
+## Release blockers recorded
+These are deferred, not dismissed. Each is a hard gate on a specific release step.
+1. **DB role separation (security H2) — blocks production / live-send release.** The application
+   connects as the database owner and can therefore `ALTER`/`DROP` its own append-only and
+   suppression guard triggers, so those protections are advisory against the app's own SQL. A
+   non-owner `kb_app` role without `TRIGGER`/`ALTER` rights must exist before real sending is
+   enabled. Tracked in TASK_BOARD Epic 7.
+2. **Custom-protocol CSP (security M8) — blocks production packaging.** Over `file://` the CSP
+   comes from a meta tag, so `frame-ancestors` is ignored and the policy is not a real header. The
+   renderer must be served from a custom protocol with CSP sent as a header before a packaged
+   release ships. Tracked in TASK_BOARD Epic 7.
+3. **Windows-compatible smoke handling — blocks Windows packaging.** See deviation 6.
+4. **CI execution — blocks trusting lane merges.** See deviation 4.
 
 ## Next step
-On approval: freeze contracts, create the six lane worktrees (`lane/<x>-<name>`), and begin Wave 1 per docs/10 §4. Not started.
+Contracts are frozen and the Foundation Gate is accepted. The next step is to create the six lane
+worktrees (`lane/<x>-<name>`) and begin Wave 1 per docs/10 §4. **Not started** — stopped here per
+decision 10.

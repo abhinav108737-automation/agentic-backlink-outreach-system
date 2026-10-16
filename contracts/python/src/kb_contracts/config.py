@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     app_env: str = "development"
     log_level: str = "INFO"
     database_url: str = "postgresql+asyncpg://backlink:backlink@localhost:55432/backlink"
-    qdrant_url: str = "http://localhost:56333"
+    # Canonical Qdrant service port. A dev host that already has 6333 taken overrides
+    # QDRANT_URL (and QDRANT_HOST_PORT for the compose stack); 6333 is never re-mapped
+    # inside the container.
+    qdrant_url: str = "http://localhost:6333"
     ollama_url: str = "http://localhost:11434"
     real_send_enabled: bool = False
     autonomy_mode: AutonomyMode = AutonomyMode.SHADOW

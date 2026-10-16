@@ -1,0 +1,18 @@
+# Gitleaks configuration for the Foundation secret-scan gate.
+# Extends the upstream default ruleset; we only narrow WHERE it looks, never WHAT it detects.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Vendored dependencies, build output and verbatim third-party reference material."
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.venv/''',
+  '''(^|/)(dist|out|release|coverage)/''',
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)uv\.lock$''',
+  # Generated from the OpenAPI snapshot; contains no credentials of its own.
+  '''^contracts/generated_ts/src/api\.d\.ts$''',
+  # Verbatim handoff/reference documents, not project source.
+  '''^docs/reference/''',
+]

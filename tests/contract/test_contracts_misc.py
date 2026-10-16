@@ -26,7 +26,11 @@ def test_safe_defaults(monkeypatch):
     assert s.real_send_enabled is False
     assert s.autonomy_mode.value == "shadow"
     assert s.email_provider == "mock" and s.search_provider == "mock"
-    assert s.qdrant_url.endswith(":56333")
+    # The canonical Qdrant service port is 6333; the dev host port is configurable and is
+    # never baked into the contract defaults.
+    assert s.qdrant_url == "http://localhost:6333"
+    monkeypatch.setenv("QDRANT_URL", "http://localhost:56333")
+    assert Settings(_env_file=None).qdrant_url == "http://localhost:56333"
 
 
 @pytest.mark.req("FR-05")

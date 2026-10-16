@@ -19,8 +19,12 @@ step "mypy (strict on kb_*)";           uv run mypy contracts/python/src apps/ap
 step "import-linter (boundaries)";      uv run lint-imports
 
 if [ "$CI" -eq 0 ]; then
-  step "dev stack (PostgreSQL 55432, Qdrant 56333)"
-  docker compose -f infrastructure/docker/compose.dev.yml up -d --wait postgres qdrant
+  step "dev stack (PostgreSQL + Qdrant)"
+  # A local .env may remap host ports (QDRANT_HOST_PORT) when a default port is already
+  # taken on this machine; container/service ports are fixed.
+  compose=(docker compose -f infrastructure/docker/compose.dev.yml)
+  [ -f .env ] && compose+=(--env-file .env)
+  "${compose[@]}" up -d --wait postgres qdrant
 fi
 
 step "pytest (contract, security, migrations, handshake)"; uv run pytest -q
