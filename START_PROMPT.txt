@@ -1,0 +1,5 @@
+Read CLAUDE.md and MASTER_BUILD_PROMPT.md in full, then read docs/00_PRODUCT_BRIEF.md through docs/12_REPOSITORY_RESEARCH.md and TASK_BOARD.md.
+
+Act as the Level-0 Principal Engineer and Integrator. Before coding: inspect the repository, produce a dependency-aware implementation plan, assign independent workstreams to configured domain subagents, identify work for agent teams/worktrees, identify blocking TBDs, and define the Phase 0 acceptance gate. Then begin Phase 0 only.
+
+Do not enable real email sending. Do not introduce a mandatory paid API. Do not bypass policy controls. Do not let agents edit the same files concurrently. Run the phase-gate skill at the end of every phase.
