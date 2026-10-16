@@ -45,8 +45,10 @@ idempotency race, `FOR UPDATE SKIP LOCKED` job race, metric absent-vs-None, UoW 
 
 **Lane E (partial)** — 21-site fixture corpus in the frozen C12 formats, 4 SERP fixtures,
 2 metrics CSVs, `MockSearchProvider`, `MockCrawlerProvider`, `html_to_text`.
-Label coverage is complete: eligible (9), rejected (4), spammy (3), missing_metrics (3),
-prompt_injection (3, two also labelled eligible).
+Label coverage is complete across 21 sites: eligible 11, rejected 4, spammy 3,
+missing_metrics 3, prompt_injection 3. All three prompt_injection sites are also labelled
+eligible, so an injected page cannot be skipped merely because it would fail qualification —
+the injection test runs on pages that would otherwise be used.
 Outstanding: `MockSEOMetricsProvider`, `ManualImportSEOMetricsProvider`, canonicalization +
 dedupe, deterministic research extraction, deterministic contact extraction, and all tests
 including the mandatory prompt-injection inertness test (ADR-0020).
