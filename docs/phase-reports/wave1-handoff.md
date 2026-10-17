@@ -1,111 +1,135 @@
 # Session Handoff — Wave 1 (toward integration checkpoint I1)
 
-Date 2026-10-16 · branch `foundation/g0-gate` · last commit `fc424ab` · tree clean
-Baseline: `baa5a7e` (canonical docs + ADRs) → `84af80f` (Foundation Gate accepted) → `fc424ab` (this partial Wave 1).
+Date 2026-10-17 · branch `foundation/g0-gate` · tree clean
+History: `baa5a7e` (canonical docs + ADRs) → `84af80f` (Foundation Gate accepted) →
+`fc424ab` / `74c517d` / `8d246e8` (interrupted first Wave 1 attempt, preserved) →
+this commit (Lanes C + E complete).
 
-## Status: I1 NOT reached
+## Status: Lanes C and E COMPLETE. I1 not yet reached.
 
-Wave 1 was interrupted. All three implementation agents (Lanes B, C, E) terminated on an
-**account session rate limit** (resets 21:20 Asia/Calcutta) before completing their bounded
-tasks. No lane finished. Lane B produced nothing. The partial work that survived is committed
-and green, but the I1 slice does not run end to end and **no I1 checkpoint commit was made**.
+The data layer and the discovery/research/contact layer are done, tested and verified. The I1
+slice (discover → qualify → DEFERRED case → research → contact → API) does **not** yet run end
+to end, because **Lane B (PolicyEngine, transitions, APIs) and Lane D (agent runtime) have not
+been launched.** No I1 checkpoint commit has been made. Lanes B and D were deliberately left
+unlaunched per instruction.
 
-This was an infrastructure interruption, not a design or integration failure. Nothing is known
-to be wrong with the plan; it simply did not finish.
-
-## Verified green on commit `fc424ab`
+## Gate — green, `infrastructure/scripts/check.sh` exit 0
 
 | Gate | Result |
 |---|---|
-| ruff check / format | clean, 120 files |
-| mypy strict | no issues, 50 source files |
+| ruff check / format | clean, 155 files |
+| mypy strict | no issues, **73 source files** |
 | import-linter | 3/3 contracts kept |
-| pytest | 123 passed (unchanged from Foundation — no new tests were written) |
-| manual smoke | MockSearchProvider + MockCrawlerProvider exercised against fixtures by hand |
+| pytest | **315 passed, 0 skipped** — 151 unit, 60 DB integration, 104 contract/security |
+| vitest | 22 passed |
+| contract drift | OpenAPI + TS in sync (contracts untouched, still `0.1.0`) |
+| gitleaks | clean, history + working tree |
 
-The 123 figure is the Foundation baseline. **The new code in this commit has no automated test
-coverage of its own** — every lane died before writing tests. Treat the partial code as
-unverified beyond lint, types and a hand smoke.
+The previous handoff's central warning is now closed: the Wave 1 code **has real automated
+coverage**. Test count went 123 → 315. All 60 DB tests execute against real PostgreSQL under
+`KB_REQUIRE_DB=1` with zero skips.
+
+## Independently verified by the Lead (not taken on agent report)
+
+| Claim | Verification |
+|---|---|
+| Metric three-state through the real UoW | `latest()` returned `{domain_authority: 55.0, spam_score: None}` with `trust_flow` **absent** — all three states distinct |
+| UoW transition+audit atomicity | audit row visible inside the transaction (1), **gone after rollback** (0) |
+| Seed `content_hash` | recomputed independently, matches `sha256:e6e54ac6b44bdb3901e6569b6ac41bb8b2b1c422e475c843cfe14c99f7b71b48` |
+| Four DEFER shapes | 3 fetched-but-unavailable + 1 never-fetched all DEFER; only a fully-metricked domain passes |
+| Prompt-injection inertness | adversarially re-tested across all three injection sites and every declared page; no bait text reaches topics/title/evidence, no `attacker.example` contact |
+| Contracts untouched | `git status contracts/` empty; `CONTRACT_VERSION = "0.1.0"` |
+
+Two apparent injection failures in the Lead's first probe were artifacts of the probe itself:
+"injected" appears in `injected-editorial-notes.com`'s own domain name, and that site's payload
+lives only on `/`, so `injection_suspected: False` on `/write-for-us` is correct.
 
 ## What exists now
 
-**Lead**
-- `services/core/src/kb_core/db/protocols.py` — repository + `UnitOfWork` seam, **frozen for
-  Wave 1**. Written so Lanes B and C could run in parallel instead of C-then-B. Key invariant
-  encoded in it: `DomainMetricRepository.latest` keeps *never fetched* (key absent) distinct
-  from *fetched but unavailable* (value `None`). Collapsing those would let a prospect pass
-  qualification on a missing metric, which ADR-0015 forbids — both must DEFER.
-- `docs/ccr/CCR-001.md` — filed and approved, **not executed**.
+**Lane C** — `kb_core/db/`: `_common.py`, `repos_core.py` (audit, policy, campaign, domain,
+domain_metric, prospect, prospect_url), `repos_research.py` (qualification, ranking, evidence,
+dossier, contact, suppression), `repos_runtime.py` (idempotency, job, approval, settings,
+agent_run), `uow.py`, `seed.py`, `vector_rebuild.py`, plus `tables.py` (48 tables; PK
+`server_default gen_random_uuid()` added to stop a per-insert SQLAlchemy PK warning — metadata
+only, no schema change, and test (i) reflects the live DB to prove it).
+`kb_providers/vector/`: `qdrant.py` (httpx REST), `memory.py`, `embeddings.py`.
+All 18 repositories exist, so `SqlUnitOfWork` genuinely satisfies the frozen `UnitOfWork`
+protocol — checked by mypy through two annotated functions in `uow.py`.
 
-**Lane C (partial)** — `kb_core/db/tables.py` (SQLAlchemy Core metadata over migration 001),
-`engine.py` (async engine factory), `page.py` (`CursorPage`).
-Outstanding: every repository implementation, `SqlUnitOfWork`, seed policy v1, Qdrant
-collections + rebuild command, and all DB tests (trigger enforcement, optimistic-lock conflict,
-idempotency race, `FOR UPDATE SKIP LOCKED` job race, metric absent-vs-None, UoW rollback).
+**Lane E** — `kb_providers/seo_metrics/` (`csv_io.py` strict parser, `mock.py`,
+`manual_import.py`), `kb_core/discovery/canonical.py`, `kb_core/research/`
+(`htmlscan.py`, `untrusted.py`, `extract.py`), `kb_core/contacts/extract.py`.
 
-**Lane E (partial)** — 21-site fixture corpus in the frozen C12 formats, 4 SERP fixtures,
-2 metrics CSVs, `MockSearchProvider`, `MockCrawlerProvider`, `html_to_text`.
-Label coverage is complete across 21 sites: eligible 11, rejected 4, spammy 3,
-missing_metrics 3, prompt_injection 3. All three prompt_injection sites are also labelled
-eligible, so an injected page cannot be skipped merely because it would fail qualification —
-the injection test runs on pages that would otherwise be used.
-Outstanding: `MockSEOMetricsProvider`, `ManualImportSEOMetricsProvider`, canonicalization +
-dedupe, deterministic research extraction, deterministic contact extraction, and all tests
-including the mandatory prompt-injection inertness test (ADR-0020).
+**Lane B** — nothing. **Lane D** — never launched.
 
-**Lane B** — nothing landed.
-**Lane D** — never launched (it was batch 2 by design, since ToolGateway depends on B and C).
+## Behaviours Lane B must know before it writes a line
 
-## The DEFERRED case I1 requires is already fixture-ready
+These are real and not in the protocol docstrings:
 
-`fixtures/metrics/baseline.csv` encodes three distinct *fetched-but-unavailable* shapes:
+1. **`SettingsRepository.get` returns `{"key", "value", "version"}`**, not a bare value dict —
+   otherwise `expected_version` could never be learned. For `set()`: `expected_version=None` is
+   an unconditional upsert, `0` means "must not exist", an int is compare-and-set.
+2. **`DomainMetricRepository.latest` is the authoritative three-state reader.** Use it for
+   qualification. Do not read `DomainMetric.value` for availability decisions (see CCR-002).
+3. **`QualificationRepository.record` rejects `ELIGIBLE` with non-empty `missing_metrics`** — a
+   deliberate ADR-0015 backstop at the data layer.
+4. **`ContactRepository.add_channel` raises `ValueError`** if `value_normalized` is not already
+   `lower(btrim(...))`. `SuppressionRepository.add` normalises in SQL instead.
+5. **Job queue semantics:** `complete(RETRY_WAIT)` increments attempts and sets bounded backoff
+   (30s doubling, capped 1h) on the DB clock; attempts ≥ `max_attempts` → `DEAD`;
+   `reclaim_expired` also → `DEAD` when attempts are spent; `claim_due` first promotes elapsed
+   `RETRY_WAIT` jobs to `SCHEDULED` and claims at most one job per `concurrency_key`.
+6. **Naive datetimes are rejected** (`ValueError`) wherever a datetime is accepted.
+   `created_at`/`updated_at` use `clock_timestamp()`, not `now()`, so ordering inside one
+   transaction is deterministic.
+7. **`SqlUnitOfWork` is single-use**; re-entering raises `RuntimeError`. `uow.session` is not on
+   the protocol — seed/rebuild/tests only.
 
-| Domain | domain_authority | spam_score | Why it must DEFER |
-|---|---|---|---|
-| `emergingmarketspulse.io` | 61.0 (would pass) | **blank** | one required metric unavailable |
-| `newtradejournal.com` | **blank** | 0.3 | the other one unavailable |
-| `quietdataweekly.net` | **blank** | **blank** | both unavailable |
+## Open contract decisions
 
-A fourth shape — *never fetched* — is produced by any domain absent from the CSV entirely.
-Qualification must DEFER on all four and must never pass any of them.
+- **CCR-001** (`docs/ccr/CCR-001.md`) — approved, **not executed**. Typed campaign/prospect/
+  approvals/system routes; needs Lane B's handlers to exist first. The contract drift gate will
+  fail between Lane B landing handlers and the Lead regenerating — expected, and the Lead's job.
+- **CCR-002** (`docs/ccr/CCR-002.md`) — **FILED, NOT APPLIED. Needs a user decision.**
+  `DomainMetric.value: float` is non-optional while the DB column, `SEOMetric.value` and the
+  repository signature are all nullable. Lane C bridged it with a `NaN` sentinel: safe against
+  thresholds (NaN fails every comparison) but it cannot JSON round-trip — Pydantic emits
+  `"value":null`, which then fails validation on the way back, and strict JSON refuses NaN
+  outright. **Blast radius is nil today** (all routes are still 501 stubs, nothing serializes
+  `DomainMetric`) but this must be resolved **before Lane B exposes metrics through the API**.
 
-## Resume instructions (in order)
+## Known limitations accepted in Wave 1 (do not rediscover these as bugs)
 
-Do **not** start fresh agents for Lanes B, C and E — their partial work and context are saved.
-Resume each with `SendMessage` to its existing agent so it continues from where it stopped:
+1. **No Public Suffix List.** Registered-domain extraction uses a hand-maintained multi-label
+   suffix set. Known-wrong cases are pinned in tests: unlisted suffixes
+   (`shop.example.com.ng` → `com.ng`) and private suffixes (`alice.github.io` → `github.io`,
+   which would collapse distinct prospects onto one registered domain). No IDN/punycode
+   normalisation. Changing any canonicalization rule requires bumping
+   `CANONICALIZATION_VERSION` **and a backfill**, because of `UNIQUE(prospect_id, url_hash)`.
+2. **Injection detection is per text node.** A `mailto:` in a clean node adjacent to an injected
+   node still yields a contact *candidate*. A candidate triggers no action and the deterministic
+   gates still apply downstream.
+3. **Obfuscated / JS-rendered email addresses are not extracted** (no browser provider yet).
+4. **Qdrant rebuild is tested against the in-memory provider only.** The CLI
+   (`python -m kb_core.db.vector_rebuild`) was never run against live Qdrant or Ollama, though
+   Qdrant is up on 56333. Exit 0 = ok, 2 = degraded.
+5. **CI is still externally unverified** (no Git remote, Foundation decision 4). Every "green"
+   here means green on this machine only.
 
-- Lane E — agent `a01686e93c1e33ea2` (stopped after fixtures, mid provider work)
-- Lane C — agent `a2e04c21d2ec568c8` (stopped after table metadata)
-- Lane B — agent `aa6b3a1744ac9ca8f` (stopped before writing anything)
+## Next steps (not started — stopped per instruction)
 
-1. Confirm the rate limit has reset, then resume the three agents. Respect the cap of 3 concurrent
-   implementation agents and 1 child each.
-2. Integrate: run `infrastructure/scripts/check.sh` (compose stack must be up; `.env` supplies
-   `QDRANT_HOST_PORT=56333` on this machine).
-3. Launch Lane D (batch 2) once B and C are green.
-4. Execute CCR-001: `CONTRACT_VERSION` → `0.2.0`,
+1. Decide CCR-002.
+2. Launch **Lane B** (PolicyEngine, hard eligibility + DEFER, suppression, idempotency,
+   PostgresJobQueue, TransitionService, campaign/prospect APIs, approvals, kill switch) against
+   the now-real repository seam. Brief it with the seven behaviours above.
+3. Launch **Lane D** (Ollama + Fake model providers, ToolGateway + scope enforcement, the four
+   agents on TestModel, run persistence).
+4. Lead: execute CCR-001 (+ CCR-002 if approved) — `CONTRACT_VERSION` → `0.2.0`,
    `uv run python -m kb_api.export_openapi`, `npm run gen:contracts`,
-   `infrastructure/scripts/check-contracts.sh`, `contracts/CHANGELOG.md` entry.
-   The contract drift gate **will fail** between Lane B landing handlers and this step — that is
-   expected and is the Lead's job to close, not a lane's.
-5. Wire and prove the I1 slice: discover → qualify (**including a DEFERRED prospect**) →
-   research → contact → exposed through the API.
-6. Only then make the I1 checkpoint commit, and stop before Wave 2.
+   `infrastructure/scripts/check-contracts.sh`, `contracts/CHANGELOG.md`.
+5. Wire and prove the I1 slice including a DEFERRED prospect, then make the I1 checkpoint commit.
 
-## Open risks
-
-1. **No test coverage on the partial code.** It passes lint and types and nothing more. Lanes must
-   write their tests on resume; do not treat the green gate as validation of this commit's new code.
-2. **CI is still externally unverified** (no Git remote, per Foundation decision 4). Every "green"
-   in this handoff means green on this machine only.
-3. **Rate-limit exposure.** Three concurrent Opus agents exhausted the session budget quickly.
-   Consider resuming them in sequence, or two at a time, rather than three at once.
-4. The frozen seam has not yet been exercised by a real implementation on both sides, so a
-   signature problem would surface on resume. If one does, it comes to the Lead — Lane B and C
-   must not edit `protocols.py` independently.
-
-## Unchanged release blockers (from the Foundation Gate)
+## Unchanged release blockers (Foundation Gate)
 
 DB role separation (blocks production / live-send) · custom-protocol CSP (blocks production
-packaging) · Windows `ELECTRON_RUN_AS_NODE` handling (blocks Windows packaging). None of these
-block I1.
+packaging) · Windows `ELECTRON_RUN_AS_NODE` handling (blocks Windows packaging). None block I1.

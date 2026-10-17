@@ -25,7 +25,9 @@ METADATA = sa.MetaData()
 agent_runs = sa.Table(
     "agent_runs",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("campaign_id", pg.UUID(as_uuid=True)),
@@ -53,7 +55,9 @@ agent_runs = sa.Table(
 analytics_daily = sa.Table(
     "analytics_daily",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("campaign_id", pg.UUID(as_uuid=True)),
@@ -67,7 +71,9 @@ analytics_daily = sa.Table(
 analytics_weekly = sa.Table(
     "analytics_weekly",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("campaign_id", pg.UUID(as_uuid=True)),
@@ -81,7 +87,9 @@ analytics_weekly = sa.Table(
 approval_requests = sa.Table(
     "approval_requests",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("kind", sa.Text(), nullable=False),
@@ -98,7 +106,9 @@ approval_requests = sa.Table(
 audit_events = sa.Table(
     "audit_events",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("occurred_at", sa.TIMESTAMP(timezone=True), nullable=False),
@@ -119,7 +129,9 @@ audit_events = sa.Table(
 backlink_verifications = sa.Table(
     "backlink_verifications",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("backlink_id", pg.UUID(as_uuid=True), nullable=False),
@@ -138,7 +150,9 @@ backlink_verifications = sa.Table(
 backlinks = sa.Table(
     "backlinks",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("version", sa.Integer(), nullable=False),
@@ -157,7 +171,9 @@ backlinks = sa.Table(
 campaign_targets = sa.Table(
     "campaign_targets",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("campaign_id", pg.UUID(as_uuid=True), nullable=False),
@@ -171,7 +187,9 @@ campaign_targets = sa.Table(
 campaigns = sa.Table(
     "campaigns",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("version", sa.Integer(), nullable=False),
@@ -187,7 +205,9 @@ campaigns = sa.Table(
 contact_channels = sa.Table(
     "contact_channels",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("contact_id", pg.UUID(as_uuid=True), nullable=False),
@@ -201,7 +221,9 @@ contact_channels = sa.Table(
 contacts = sa.Table(
     "contacts",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("domain_id", pg.UUID(as_uuid=True), nullable=False),
@@ -216,7 +238,9 @@ contacts = sa.Table(
 content_submissions = sa.Table(
     "content_submissions",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("opportunity_id", pg.UUID(as_uuid=True), nullable=False),
@@ -231,7 +255,9 @@ content_submissions = sa.Table(
 domain_metrics = sa.Table(
     "domain_metrics",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("domain_id", pg.UUID(as_uuid=True), nullable=False),
@@ -246,7 +272,9 @@ domain_metrics = sa.Table(
 domains = sa.Table(
     "domains",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("registered_domain", sa.Text(), nullable=False),
@@ -256,7 +284,9 @@ domains = sa.Table(
 embedding_index_records = sa.Table(
     "embedding_index_records",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("source_table", sa.Text(), nullable=False),
@@ -271,7 +301,9 @@ embedding_index_records = sa.Table(
 evidence_items = sa.Table(
     "evidence_items",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("prospect_id", pg.UUID(as_uuid=True), nullable=False),
@@ -287,7 +319,9 @@ evidence_items = sa.Table(
 experiment_assignments = sa.Table(
     "experiment_assignments",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("experiment_id", pg.UUID(as_uuid=True), nullable=False),
@@ -300,7 +334,9 @@ experiment_assignments = sa.Table(
 experiments = sa.Table(
     "experiments",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("proposal_id", pg.UUID(as_uuid=True), nullable=False),
@@ -316,7 +352,9 @@ experiments = sa.Table(
 feature_snapshots = sa.Table(
     "feature_snapshots",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("entity_type", sa.Text(), nullable=False),
@@ -329,7 +367,9 @@ feature_snapshots = sa.Table(
 guest_post_opportunities = sa.Table(
     "guest_post_opportunities",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("version", sa.Integer(), nullable=False),
@@ -344,7 +384,9 @@ guest_post_opportunities = sa.Table(
 idempotency_records = sa.Table(
     "idempotency_records",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("key", sa.Text(), nullable=False),
@@ -356,7 +398,9 @@ idempotency_records = sa.Table(
 memories = sa.Table(
     "memories",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("memory_type", sa.Text(), nullable=False),
@@ -370,7 +414,9 @@ memories = sa.Table(
 negotiations = sa.Table(
     "negotiations",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("opportunity_id", pg.UUID(as_uuid=True), nullable=False),
@@ -385,7 +431,9 @@ negotiations = sa.Table(
 operator_decisions = sa.Table(
     "operator_decisions",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("campaign_id", pg.UUID(as_uuid=True), nullable=False),
@@ -403,7 +451,9 @@ operator_decisions = sa.Table(
 operators = sa.Table(
     "operators",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("display_name", sa.Text(), nullable=False),
@@ -413,7 +463,9 @@ operators = sa.Table(
 optimization_proposals = sa.Table(
     "optimization_proposals",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("version", sa.Integer(), nullable=False),
@@ -431,7 +483,9 @@ optimization_proposals = sa.Table(
 outreach_events = sa.Table(
     "outreach_events",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("message_id", pg.UUID(as_uuid=True)),
@@ -444,7 +498,9 @@ outreach_events = sa.Table(
 outreach_messages = sa.Table(
     "outreach_messages",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("version", sa.Integer(), nullable=False),
@@ -470,7 +526,9 @@ outreach_messages = sa.Table(
 outreach_sequences = sa.Table(
     "outreach_sequences",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("version", sa.Integer(), nullable=False),
@@ -486,7 +544,9 @@ outreach_sequences = sa.Table(
 outreach_threads = sa.Table(
     "outreach_threads",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("sequence_id", pg.UUID(as_uuid=True), nullable=False),
@@ -498,7 +558,9 @@ outreach_threads = sa.Table(
 policies = sa.Table(
     "policies",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("key", sa.Text(), nullable=False),
@@ -511,7 +573,9 @@ policies = sa.Table(
 policy_versions = sa.Table(
     "policy_versions",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("policy_id", pg.UUID(as_uuid=True), nullable=False),
@@ -528,7 +592,9 @@ policy_versions = sa.Table(
 prospect_urls = sa.Table(
     "prospect_urls",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("prospect_id", pg.UUID(as_uuid=True), nullable=False),
@@ -542,7 +608,9 @@ prospect_urls = sa.Table(
 prospects = sa.Table(
     "prospects",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("version", sa.Integer(), nullable=False),
@@ -555,7 +623,9 @@ prospects = sa.Table(
 provider_accounts = sa.Table(
     "provider_accounts",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("provider_type", sa.Text(), nullable=False),
@@ -570,7 +640,9 @@ provider_accounts = sa.Table(
 provider_health = sa.Table(
     "provider_health",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("provider_account_id", pg.UUID(as_uuid=True)),
@@ -584,7 +656,9 @@ provider_health = sa.Table(
 qualification_decisions = sa.Table(
     "qualification_decisions",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("prospect_id", pg.UUID(as_uuid=True), nullable=False),
@@ -600,7 +674,9 @@ qualification_decisions = sa.Table(
 ranking_results = sa.Table(
     "ranking_results",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("prospect_id", pg.UUID(as_uuid=True), nullable=False),
@@ -614,7 +690,9 @@ ranking_results = sa.Table(
 replies = sa.Table(
     "replies",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("thread_id", pg.UUID(as_uuid=True)),
@@ -629,7 +707,9 @@ replies = sa.Table(
 reply_classifications = sa.Table(
     "reply_classifications",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("reply_id", pg.UUID(as_uuid=True), nullable=False),
@@ -644,7 +724,9 @@ reply_classifications = sa.Table(
 report_snapshots = sa.Table(
     "report_snapshots",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("payload", pg.JSONB(), nullable=False),
@@ -656,7 +738,9 @@ report_snapshots = sa.Table(
 research_dossiers = sa.Table(
     "research_dossiers",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("prospect_id", pg.UUID(as_uuid=True), nullable=False),
@@ -671,7 +755,9 @@ research_dossiers = sa.Table(
 scheduled_jobs = sa.Table(
     "scheduled_jobs",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("job_type", sa.Text(), nullable=False),
@@ -694,7 +780,9 @@ scheduled_jobs = sa.Table(
 suppression_entries = sa.Table(
     "suppression_entries",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("scope", sa.Text(), nullable=False),
@@ -710,7 +798,9 @@ suppression_entries = sa.Table(
 system_settings = sa.Table(
     "system_settings",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("version", sa.Integer(), nullable=False),
@@ -721,7 +811,9 @@ system_settings = sa.Table(
 tool_calls = sa.Table(
     "tool_calls",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("agent_run_id", pg.UUID(as_uuid=True), nullable=False),
@@ -737,7 +829,9 @@ tool_calls = sa.Table(
 weekly_reports = sa.Table(
     "weekly_reports",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("campaign_id", pg.UUID(as_uuid=True)),
@@ -751,7 +845,9 @@ weekly_reports = sa.Table(
 workflow_runs = sa.Table(
     "workflow_runs",
     METADATA,
-    sa.Column("id", pg.UUID(as_uuid=True), primary_key=True),
+    sa.Column(
+        "id", pg.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+    ),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column("campaign_id", pg.UUID(as_uuid=True)),

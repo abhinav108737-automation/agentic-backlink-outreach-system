@@ -15,17 +15,26 @@ Contracts v0.1.0 are **FROZEN** — changes only via a Contract Change Request (
 - [x] E0.9 OpenAPI typed client (snapshot + generated TS + drift gate)
 - [~] E0.10 CI gate: `check.sh --smoke` passes locally (incl. real `npm ci` + gitleaks 8.30.1); `.github/workflows/ci.yml` **never executed — no Git remote configured, so CI is externally unverified**. Run it on the first push, before any lane merge is trusted.
 
-## Wave 1 (toward integration checkpoint I1) — **INTERRUPTED 2026-10-16, I1 NOT reached**
-All three implementation agents stopped on an account session rate limit. Partial work is
-committed in `fc424ab` and is green (ruff, strict mypy, import-linter, 123 pytest).
-Resume plan and exact next actions: `docs/phase-reports/wave1-handoff.md`.
-- [x] Lead: repository/UnitOfWork seam `kb_core/db/protocols.py` (frozen for Wave 1)
-- [x] Lead: CCR-001 filed + approved (`docs/ccr/CCR-001.md`) — **not yet executed**
-- [~] Lane C data: table metadata + async engine + CursorPage done; **repositories, UnitOfWork, seed policy v1, Qdrant collections/rebuild, DB tests all outstanding**
-- [~] Lane E outreach: 21-site fixture corpus (all 5 label classes) + MockSearch + MockCrawler + html_to_text done; **SEOMetricsProvider, ManualImport CSV, canonicalization/dedupe, research extraction, contact extraction, all tests outstanding**
+## Wave 1 (toward integration checkpoint I1) — **Lanes C + E COMPLETE 2026-10-17; I1 not yet reached**
+Lanes C and E are done and verified. Lanes B and D have not been launched, so the I1 slice does
+not yet run end to end. Full gate green: `check.sh` exit 0 — ruff, strict mypy (73 files),
+import-linter 3/3, **315 pytest (151 unit + 60 DB integration, 0 skipped) + 22 vitest**,
+contract drift in sync, gitleaks clean.
+Detail and resume plan: `docs/phase-reports/wave1-handoff.md`.
+- [x] Lead: repository/UnitOfWork seam `kb_core/db/protocols.py` (frozen for Wave 1; now exercised from the data side and satisfied by `SqlUnitOfWork` under strict mypy)
+- [x] Lead: CCR-001 filed + approved (`docs/ccr/CCR-001.md`) — **not yet executed** (needs Lane B)
+- [x] **Lead: CCR-002 FILED, NOT APPLIED (`docs/ccr/CCR-002.md`) — needs a user decision.** `DomainMetric.value` is a non-optional `float` while the DB column, `SEOMetric` and the repository signature are all nullable. Worked around with a `NaN` sentinel, which fails safe for thresholds but cannot JSON round-trip. **Must be resolved before Lane B exposes metrics through the API.**
+- [x] Lane C data: all 18 repositories, `SqlUnitOfWork` + factory (transition+audit atomic in one transaction), seed policy v1 (`sha256:e6e54ac6…b71b48`), Qdrant provider + in-memory provider + rebuild command, 60 DB integration tests incl. append-only triggers, suppression guard, optimistic lock, metric three-state, UoW rollback, idempotency race, `FOR UPDATE SKIP LOCKED` job race, schema-drift reflection
+- [x] Lane E outreach: 21-site fixture corpus (all 5 label classes), MockSearch/MockCrawler/MockSEOMetrics, ManualImport CSV, canonicalization + dedupe + stable `url_hash`, deterministic research and contact extraction, 151 offline unit tests incl. the mandatory ADR-0020 prompt-injection inertness suite
 - [ ] Lane B backend: **nothing landed.** PolicyEngine, hard eligibility + DEFER, suppression, idempotency, PostgresJobQueue, TransitionService, campaign/prospect APIs, approvals, kill switch
-- [ ] Lane D agent runtime (batch 2, never launched): Ollama + Fake providers, ToolGateway + scope enforcement, Discovery/Qualification/Research/Contact agents, run persistence
-- [ ] Lead: CCR-001 execution (CONTRACT_VERSION -> 0.2.0, OpenAPI + TS regen, changelog), I1 pipeline wiring, I1 checkpoint commit
+- [ ] Lane D agent runtime (never launched): Ollama + Fake providers, ToolGateway + scope enforcement, Discovery/Qualification/Research/Contact agents, run persistence
+- [ ] Lead: CCR-001 (+ CCR-002 if approved) execution, I1 pipeline wiring, I1 checkpoint commit
+
+### Known limitations accepted in Wave 1 (not defects to rediscover)
+- **No Public Suffix List.** Registered-domain extraction uses a hand-maintained multi-label suffix set (`.co.uk`, `.com.au`, `.co.nz`, `.co.in`, `.co.jp`, `.com.br`, `.com.cn`, `.com.sg`, …). Known-wrong cases are pinned in tests: unlisted suffixes (`shop.example.com.ng` → `com.ng`) and private suffixes (`alice.github.io` → `github.io`, which would collapse distinct prospects onto one registered domain). No IDN/punycode normalisation.
+- **Injection detection is per text node.** A `mailto:` in a clean node adjacent to an injected node still yields a contact *candidate*. A candidate triggers no action and the deterministic gates still apply.
+- **Obfuscated / JS-rendered email addresses are not extracted** (no browser provider in this wave).
+- **Qdrant rebuild is tested against the in-memory provider only**; the CLI was not run against live Qdrant or Ollama.
 
 ## Epic 1 Campaign/Data
 - [ ] campaign schema/API/UI
