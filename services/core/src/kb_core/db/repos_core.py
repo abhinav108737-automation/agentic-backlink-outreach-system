@@ -254,13 +254,9 @@ class SqlDomainMetricRepository:
             .returning(t.domain_metrics)
         )
         row = (await self._s.execute(stmt)).mappings().one()
-        # SEAM NOTE: frozen `DomainMetric.value` is a non-optional float, so an "unavailable"
-        # reading (stored as NULL) is surfaced to the caller as NaN. NaN fails every threshold
-        # comparison, so it can never pass qualification, and `latest()` is the authoritative
-        # three-state reader. Reported to the Lead as a contract gap.
-        return dto(
-            DomainMetric, row, value=float("nan") if row["value"] is None else float(row["value"])
-        )
+        # CCR-002: `value` is nullable, so an unavailable reading round-trips as None rather
+        # than through a NaN sentinel. `latest()` remains the authoritative three-state reader.
+        return dto(DomainMetric, row, value=None if row["value"] is None else float(row["value"]))
 
     async def latest(self, domain_id: UUID, metrics: Sequence[str]) -> dict[str, float | None]:
         """Newest reading per metric, keeping three states distinct:

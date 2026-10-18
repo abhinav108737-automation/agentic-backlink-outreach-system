@@ -28,10 +28,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Listapprovals */
+        /**
+         * Listapprovals
+         * @description Pending approvals, oldest first.
+         */
         get: operations["listApprovals"];
         put?: never;
-        post?: never;
+        /** Createapproval */
+        post: operations["createApproval"];
         delete?: never;
         options?: never;
         head?: never;
@@ -79,7 +83,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Listcampaigns */
+        get: operations["listCampaigns"];
         put?: never;
         /** Createcampaign */
         post: operations["createCampaign"];
@@ -100,6 +105,23 @@ export interface paths {
         get: operations["getCampaign"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/campaigns/{campaign_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activatecampaign */
+        post: operations["activateCampaign"];
         delete?: never;
         options?: never;
         head?: never;
@@ -132,7 +154,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Runcampaign */
+        /**
+         * Runcampaign
+         * @description Starts the campaign: the same guarded DRAFT/PAUSED -> ACTIVE transition as `activate`.
+         *     It enqueues no work and sends nothing; automation stays behind the policy gate.
+         */
         post: operations["runCampaign"];
         delete?: never;
         options?: never;
@@ -266,7 +292,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Getprospect */
+        /**
+         * Getprospect
+         * @description Why the prospect is where it is: the qualification decision (with DEFERRED reason and
+         *     `missing_metrics`), each required metric's state, ranking, dossier, evidence, contacts.
+         */
         get: operations["getProspect"];
         put?: never;
         post?: never;
@@ -379,6 +409,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system/kill-switch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Getkillswitch */
+        get: operations["getKillSwitch"];
+        /** Setkillswitch */
+        put: operations["setKillSwitch"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/threads/{thread_id}": {
         parameters: {
             query?: never;
@@ -400,6 +448,114 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ApprovalKind
+         * @enum {string}
+         */
+        ApprovalKind: "live_send_activation" | "l3_policy_change" | "negotiation_commitment" | "message_send";
+        /** ApprovalPage */
+        ApprovalPage: {
+            /** Items */
+            items: components["schemas"]["ApprovalRequest"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** ApprovalRequest */
+        ApprovalRequest: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided By */
+            decided_by?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["ApprovalKind"];
+            /** Reason */
+            reason?: string | null;
+            /** Requested By */
+            requested_by: string;
+            status: components["schemas"]["ApprovalStatus"];
+            /**
+             * Subject Id
+             * Format: uuid
+             */
+            subject_id: string;
+            /** Subject Type */
+            subject_type: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ApprovalStatus
+         * @enum {string}
+         */
+        ApprovalStatus: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+        /**
+         * AutonomyMode
+         * @enum {string}
+         */
+        AutonomyMode: "shadow" | "guarded" | "autonomous";
+        /** Campaign */
+        Campaign: {
+            /** @default shadow */
+            autonomy_mode: components["schemas"]["AutonomyMode"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Goals */
+            goals?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Policy Version Id */
+            policy_version_id?: string | null;
+            /** Sender Provider Account Id */
+            sender_provider_account_id?: string | null;
+            status: components["schemas"]["CampaignStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
+        /**
+         * CampaignActionRequest
+         * @description Optional operator note recorded as the transition reason.
+         */
+        CampaignActionRequest: {
+            /** Reason */
+            reason?: string | null;
+        };
+        /** CampaignPage */
+        CampaignPage: {
+            /** Items */
+            items: components["schemas"]["Campaign"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /**
+         * CampaignStatus
+         * @enum {string}
+         */
+        CampaignStatus: "DRAFT" | "ACTIVE" | "PAUSED" | "ARCHIVED";
         /** ComponentHealth */
         ComponentHealth: {
             /** Critical */
@@ -413,12 +569,524 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** Contact */
+        Contact: {
+            /** Confidence */
+            confidence: number;
+            /**
+             * Contact Type
+             * @default generic
+             */
+            contact_type: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Domain Id
+             * Format: uuid
+             */
+            domain_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name?: string | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            };
+            /** Role */
+            role?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ContactChannel */
+        ContactChannel: {
+            /** Channel Type */
+            channel_type: string;
+            /** Confidence */
+            confidence: number;
+            /**
+             * Contact Id
+             * Format: uuid
+             */
+            contact_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Evidence Item Id */
+            evidence_item_id?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Value Normalized */
+            value_normalized: string;
+            /**
+             * Verification Status
+             * @default unverified
+             */
+            verification_status: string;
+        };
+        /** ContactView */
+        ContactView: {
+            /**
+             * Channels
+             * @default []
+             */
+            channels: components["schemas"]["ContactChannel"][];
+            contact: components["schemas"]["Contact"];
+        };
+        /** CreateApprovalRequest */
+        CreateApprovalRequest: {
+            kind: components["schemas"]["ApprovalKind"];
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Subject Id
+             * Format: uuid
+             */
+            subject_id: string;
+            /** Subject Type */
+            subject_type: string;
+        };
+        /** CreateCampaignRequest */
+        CreateCampaignRequest: {
+            /** Goals */
+            goals?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name: string;
+            /** Policy Version Id */
+            policy_version_id?: string | null;
+        };
+        /** DecideApprovalRequest */
+        DecideApprovalRequest: {
+            decision: components["schemas"]["ApprovalStatus"];
+            /** Reason */
+            reason?: string | null;
+        };
+        /** Domain */
+        Domain: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * First Seen At
+             * Format: date-time
+             */
+            first_seen_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Registered Domain */
+            registered_domain: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** EvidenceItem */
+        EvidenceItem: {
+            /** Content Hash */
+            content_hash: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dossier Id */
+            dossier_id?: string | null;
+            /** Excerpt */
+            excerpt: string;
+            /**
+             * Extracted At
+             * Format: date-time
+             */
+            extracted_at: string;
+            /**
+             * Extractor
+             * @default deterministic
+             */
+            extractor: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Prospect Id
+             * Format: uuid
+             */
+            prospect_id: string;
+            /** Source Url */
+            source_url: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** KillSwitchUpdate */
+        KillSwitchUpdate: {
+            /** Active */
+            active: boolean;
+            /** Expected Version */
+            expected_version?: number | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** KillSwitchView */
+        KillSwitchView: {
+            /** Active */
+            active: boolean;
+            /** Changed By */
+            changed_by?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Version */
+            version: number;
+        };
+        /**
+         * MetricReading
+         * @description One required metric's current state. `value` is None unless `state == available`; an
+         *     unavailable or never-fetched metric is `null` on the wire, never 0 and never NaN.
+         */
+        MetricReading: {
+            /** Metric */
+            metric: string;
+            state: components["schemas"]["MetricState"];
+            /** Value */
+            value?: number | null;
+        };
+        /**
+         * MetricState
+         * @enum {string}
+         */
+        MetricState: "available" | "unavailable" | "never_fetched";
+        /** Prospect */
+        Prospect: {
+            /**
+             * Campaign Id
+             * Format: uuid
+             */
+            campaign_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Discovered Via */
+            discovered_via?: string | null;
+            /**
+             * Domain Id
+             * Format: uuid
+             */
+            domain_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            status: components["schemas"]["ProspectStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
+        /** ProspectDetailView */
+        ProspectDetailView: {
+            /**
+             * Contacts
+             * @default []
+             */
+            contacts: components["schemas"]["ContactView"][];
+            domain?: components["schemas"]["Domain"] | null;
+            dossier?: components["schemas"]["ResearchDossier"] | null;
+            /**
+             * Evidence
+             * @default []
+             */
+            evidence: components["schemas"]["EvidenceItem"][];
+            /**
+             * Metrics
+             * @default []
+             */
+            metrics: components["schemas"]["MetricReading"][];
+            prospect: components["schemas"]["Prospect"];
+            qualification?: components["schemas"]["QualificationDecision"] | null;
+            /** Qualification Explanation */
+            qualification_explanation?: string | null;
+            ranking?: components["schemas"]["RankingResult"] | null;
+            /**
+             * Urls
+             * @default []
+             */
+            urls: components["schemas"]["ProspectUrl"][];
+        };
+        /** ProspectPage */
+        ProspectPage: {
+            /** Items */
+            items: components["schemas"]["Prospect"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /**
+         * ProspectStatus
+         * @enum {string}
+         */
+        ProspectStatus: "DISCOVERED" | "DEFERRED" | "ELIGIBLE" | "REJECTED" | "RANKED" | "RESEARCHED" | "CONTACT_READY" | "OUTREACH_READY" | "IN_OUTREACH" | "WON" | "LOST" | "SUPPRESSED";
+        /** ProspectUrl */
+        ProspectUrl: {
+            /** Canonical Url */
+            canonical_url: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Page Type
+             * @default other
+             */
+            page_type: string;
+            /**
+             * Prospect Id
+             * Format: uuid
+             */
+            prospect_id: string;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Url */
+            url: string;
+            /** Url Hash */
+            url_hash: string;
+        };
+        /** QualificationDecision */
+        QualificationDecision: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Metric Snapshot */
+            metric_snapshot?: {
+                [key: string]: number | null;
+            };
+            /**
+             * Missing Metrics
+             * @default []
+             */
+            missing_metrics: string[];
+            outcome: components["schemas"]["QualificationOutcome"];
+            /**
+             * Policy Version Id
+             * Format: uuid
+             */
+            policy_version_id: string;
+            /**
+             * Prospect Id
+             * Format: uuid
+             */
+            prospect_id: string;
+            /**
+             * Reason Codes
+             * @default []
+             */
+            reason_codes: string[];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * QualificationOutcome
+         * @enum {string}
+         */
+        QualificationOutcome: "ELIGIBLE" | "REJECTED" | "DEFERRED";
+        /** RankingResult */
+        RankingResult: {
+            /** Components */
+            components?: {
+                [key: string]: number;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Policy Version Id
+             * Format: uuid
+             */
+            policy_version_id: string;
+            /**
+             * Prospect Id
+             * Format: uuid
+             */
+            prospect_id: string;
+            /** Score */
+            score: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** ReadinessReport */
         ReadinessReport: {
             /** Components */
             components: components["schemas"]["ComponentHealth"][];
             /** Status */
             status: string;
+        };
+        /** ResearchDossier */
+        ResearchDossier: {
+            /** Agent Run Id */
+            agent_run_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Editorial Signals */
+            editorial_signals?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Prospect Id
+             * Format: uuid
+             */
+            prospect_id: string;
+            /** Summary */
+            summary: string;
+            /**
+             * Topics
+             * @default []
+             */
+            topics: string[];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version No */
+            version_no: number;
+        };
+        /** SettingsView */
+        SettingsView: {
+            autonomy_mode: components["schemas"]["AutonomyMode"];
+            /** Crawler Provider */
+            crawler_provider: string;
+            /** Default Daily Send Limit */
+            default_daily_send_limit: number;
+            /** Email Provider */
+            email_provider: string;
+            kill_switch: components["schemas"]["KillSwitchView"];
+            /** Real Send Enabled */
+            real_send_enabled: boolean;
+            /** Search Provider */
+            search_provider: string;
+            /** Seo Metrics Provider */
+            seo_metrics_provider: string;
+        };
+        /** SystemHealthView */
+        SystemHealthView: {
+            autonomy_mode: components["schemas"]["AutonomyMode"];
+            /** Contract Version */
+            contract_version: string;
+            /** Kill Switch Active */
+            kill_switch_active: boolean;
+            /** Real Send Enabled */
+            real_send_enabled: boolean;
+            /** Status */
+            status: string;
+        };
+        /**
+         * UpdateSettingsRequest
+         * @description Only the kill switch is mutable at runtime. `real_send_enabled` and `autonomy_mode` are
+         *     deliberately absent (extra fields are rejected): enabling real send needs an approved
+         *     live_send_activation (ADR-0007) and is not available in this build.
+         */
+        UpdateSettingsRequest: {
+            kill_switch?: components["schemas"]["KillSwitchUpdate"] | null;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
         };
     };
     responses: never;
@@ -451,7 +1119,10 @@ export interface operations {
     };
     listApprovals: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -459,12 +1130,54 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApprovalPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    createApproval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateApprovalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -473,18 +1186,33 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                approval_id: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideApprovalRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ApprovalRequest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -509,9 +1237,12 @@ export interface operations {
             };
         };
     };
-    createCampaign: {
+    listCampaigns: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -519,12 +1250,56 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["CampaignPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    createCampaign: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCampaignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Campaign"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -533,18 +1308,64 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                campaign_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Campaign"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activateCampaign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CampaignActionRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Campaign"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -553,18 +1374,33 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                campaign_id: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CampaignActionRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Campaign"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -573,18 +1409,33 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                campaign_id: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CampaignActionRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Campaign"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -713,7 +1564,12 @@ export interface operations {
     };
     listProspects: {
         parameters: {
-            query?: never;
+            query?: {
+                status?: components["schemas"]["ProspectStatus"] | null;
+                campaign_id?: string | null;
+                cursor?: string | null;
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -721,12 +1577,21 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProspectPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -735,18 +1600,29 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                prospect_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProspectDetailView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -841,12 +1717,12 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SettingsView"];
                 };
             };
         };
@@ -858,15 +1734,28 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSettingsRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SettingsView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -881,12 +1770,65 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SystemHealthView"];
+                };
+            };
+        };
+    };
+    getKillSwitch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KillSwitchView"];
+                };
+            };
+        };
+    };
+    setKillSwitch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KillSwitchUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KillSwitchView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

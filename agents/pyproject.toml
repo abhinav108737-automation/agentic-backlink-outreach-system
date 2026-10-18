@@ -2,7 +2,10 @@
 name = "kb-agents"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["kb-contracts", "pydantic-ai-slim>=0.0.50"]
+# Lane D targets the PydanticAI 2.x API (Agent(output_type=...), FunctionModel). The old
+# >=0.0.50 floor permitted a 0.x resolve that cannot run this code, so the floor now
+# matches what is actually tested.
+dependencies = ["kb-contracts", "pydantic-ai-slim>=2.57,<3"]
 
 [build-system]
 requires = ["hatchling"]

@@ -400,7 +400,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "kb-contracts", editable = "contracts/python" },
-    { name = "pydantic-ai-slim", specifier = ">=0.0.50" },
+    { name = "pydantic-ai-slim", specifier = ">=2.57,<3" },
 ]
 
 [[package]]

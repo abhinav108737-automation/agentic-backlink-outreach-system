@@ -6,6 +6,57 @@ a lane files a CCR with the Lead, the Lead edits `contracts/`, bumps the version
 here and regenerates the OpenAPI snapshot and the TS client. Lanes never edit `contracts/**`
 or `contracts/generated_ts/**` directly (ADR-0016).
 
+## 0.2.0 — 2026-10-18
+
+One revision bundling **CCR-001** and **CCR-002** (`docs/ccr/`). The version bumps once, after
+both were applied.
+
+### CCR-002 — `DomainMetric.value` is nullable, and NaN sentinels are forbidden (C2, C5)
+
+- `kb_contracts.domain.DomainMetric.value`: `float` → `float | None`.
+  The database column, `SEOMetric.value` and `DomainMetricRepository.record()` were all already
+  nullable; only this DTO forbade `NULL`, so a metric that was fetched and came back unavailable
+  was representable everywhere except in the DTO representing a stored metric. Lane C had bridged
+  the gap with a `float("nan")` sentinel, which fails safe against thresholds but cannot survive
+  serialization: Pydantic emits `null` for NaN, that `null` then fails validation on the way back,
+  and strict JSON refuses NaN outright. The sentinel is removed.
+- `Field(allow_inf_nan=False)` added to **both** `DomainMetric.value` and `SEOMetric.value`.
+  Nullability alone does not forbid a sentinel — Pydantic accepts `NaN` for a plain float field by
+  default. Both DTOs are constrained because this change's whole rationale is that the two metric
+  DTOs must agree; leaving one unconstrained would let the sentinel re-enter at the provider
+  boundary. `None` is accepted; `NaN`/`inf` raise `ValidationError`.
+- No migration: `domain_metrics.value` was already nullable in the schema and the live database.
+- Guard tests: `tests/contract/test_no_nan_sentinels.py` (8 tests) — an unavailable metric
+  round-trips as `None`, both DTOs reject `NaN`/`inf`, payloads survive
+  `json.dumps(..., allow_nan=False)`, and the two DTOs are asserted to agree on nullability.
+
+The three metric states this protects remain distinct end to end: a finite float (fetched with a
+value), `None` (fetched but unavailable), and an absent record (never fetched). For a required
+campaign metric the last two both yield `DEFERRED` and are never coerced to zero, NaN, pass or
+reject (ADR-0015).
+
+### CCR-001 — typed campaign / prospect / approvals / settings / system routes (C8, C9)
+
+- Regenerated `contracts/openapi/openapi.json` and `contracts/generated_ts/src/api.d.ts` from the
+  implemented app, replacing the untyped `501` stubs frozen at the Foundation Gate.
+- Components: **2 → 37 schemas**. New paths: `/campaigns/{campaign_id}/activate`,
+  `/system/kill-switch`. No path removed; existing `operation_id`s unchanged.
+- Response models reuse the already-frozen C2 DTOs. API **request** bodies live in
+  `apps/api/src/kb_api/schemas/`, so no new types entered the frozen contract package.
+- `apps/api/src/kb_api/routes/__init__.py` (the frozen router registry) was not edited — every
+  route module was pre-registered at the freeze precisely so this would not be necessary.
+- Routes still intentionally `501` (other lanes): messages, threads, backlinks, reports,
+  experiments, optimization proposals, providers, agent runs, and `prospects`' `research` /
+  `draft-outreach` sub-routes.
+
+### Not a contract change, recorded for traceability
+
+An app built without persistence configured now answers implemented persistence-backed routes
+with **503**, not `501`. The route exists; the dependency is absent. `501` would hide a
+deployment misconfiguration behind "not implemented". `tests/security/test_api_security.py`
+asserts both halves: a genuine stub still returns `501`, and `/prospects` returns `503` rather
+than `200` or `501` when unconfigured.
+
 ## 0.1.0 — 2026-10-16 — FROZEN
 
 Frozen at the Foundation Gate as implemented. This is the baseline all lanes A–F build against.

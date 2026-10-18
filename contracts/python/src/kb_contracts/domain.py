@@ -98,7 +98,9 @@ class DomainMetric(Entity):
     domain_id: UUID
     provider: str
     metric: str
-    value: float
+    # None = fetched but unavailable; never fabricate (ADR-0015). NaN/inf are rejected:
+    # a non-finite sentinel cannot survive a JSON round-trip (CCR-002).
+    value: float | None = Field(allow_inf_nan=False)
     fetched_at: datetime
     source: str
 

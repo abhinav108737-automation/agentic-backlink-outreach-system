@@ -79,7 +79,12 @@ async def test_correct_token_is_200_and_stubs_are_501_not_open():
     probes = [NamedProbe("postgresql", _ok, True)]
     async with client(make_app(probes), **AUTH) as c:
         assert (await c.get("/health/ready")).status_code == 200
-        assert (await c.get("/prospects")).status_code == 501  # authed, but not implemented
+        # A route that is still a stub must say so, and must never serve data.
+        assert (await c.get("/providers")).status_code == 501
+        # /prospects IS implemented now, but this app has no persistence configured. It must
+        # fail closed with 503 — never 200, and never 501, which would hide a misconfiguration
+        # behind "not implemented".
+        assert (await c.get("/prospects")).status_code == 503
 
 
 async def test_live_is_public_and_minimal():

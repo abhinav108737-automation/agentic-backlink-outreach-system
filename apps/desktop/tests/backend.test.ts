@@ -44,11 +44,17 @@ describe("backend supervisor + IPC proxy", () => {
     expect(sup.status()).toEqual({ state: "ready" });
   });
 
-  it("proxies authenticated requests: live 200, private route reaches the backend (501 stub)", async () => {
+  it("proxies authenticated requests: live 200, private routes reach the backend", async () => {
     const { bridge } = wire();
     expect((await bridge.request({ method: "GET", path: "/health/live" })).status).toBe(200);
-    const stub = await bridge.request({ method: "GET", path: "/prospects" });
-    expect(stub.status).toBe(501); // 501, not 401: the token was attached by main
+    // Anything but 401/403 proves main attached the token and the request reached the backend.
+    // /providers is still a stub, so it answers 501; /prospects is implemented (contracts 0.2.0,
+    // CCR-001) and answers 200. Asserting both means this test keeps proving token attachment
+    // whichever side of the stub boundary a route is on.
+    const stub = await bridge.request({ method: "GET", path: "/providers" });
+    expect(stub.status).toBe(501);
+    const implemented = await bridge.request({ method: "GET", path: "/prospects" });
+    expect(implemented.status).toBe(200);
     expect(stub.correlationId).toMatch(/^[0-9a-f]{16}$/);
     const ready = await bridge.request({ method: "GET", path: "/health/ready" });
     expect([200, 503]).toContain(ready.status);

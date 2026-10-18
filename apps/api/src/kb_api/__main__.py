@@ -12,6 +12,8 @@ import threading
 import uvicorn
 from kb_contracts.config import Settings
 from kb_contracts.logging import configure_logging
+from kb_core.db.engine import create_db_engine
+from kb_core.db.uow import create_uow_factory
 
 from kb_api.app import create_app
 from kb_api.auth import MIN_TOKEN_CHARS
@@ -29,7 +31,8 @@ async def serve() -> None:
     settings = Settings()
     token = _read_token()
     configure_logging(settings.log_level)
-    app = create_app(settings, token)
+    engine = create_db_engine(settings)
+    app = create_app(settings, token, uow_factory=create_uow_factory(engine))
     config = uvicorn.Config(
         app, host="127.0.0.1", port=0, log_config=None, access_log=False, lifespan="on"
     )
@@ -48,7 +51,10 @@ async def serve() -> None:
     if server.started:
         port = server.servers[0].sockets[0].getsockname()[1]
         print(f"READY port={port}", flush=True)
-    await task
+    try:
+        await task
+    finally:
+        await engine.dispose()
 
 
 def main() -> None:

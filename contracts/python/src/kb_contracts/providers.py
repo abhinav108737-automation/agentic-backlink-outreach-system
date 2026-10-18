@@ -66,7 +66,9 @@ class FetchedPage(DTO):
 class SEOMetric(DTO):
     domain: str
     metric: str
-    value: float | None  # None = unavailable; never fabricate (ADR-0015)
+    # None = unavailable; never fabricate (ADR-0015). NaN/inf rejected (CCR-002): this DTO
+    # and DomainMetric must agree, or the sentinel re-enters at the provider boundary.
+    value: float | None = Field(allow_inf_nan=False)
     source: str
     fetched_at: datetime
 
