@@ -15,7 +15,7 @@ export KB_REQUIRE_DB=1
 step "Python deps (uv, Python 3.12, frozen lockfile)"; uv sync --frozen
 step "ruff check";                      uv run ruff check .
 step "ruff format --check";             uv run ruff format --check .
-step "mypy (strict on kb_*)";           uv run mypy contracts/python/src apps/api/src services agents
+step "mypy (strict on kb_*)";           uv run mypy contracts/python/src apps/api/src apps/runtime/src services agents
 step "import-linter (boundaries)";      uv run lint-imports
 
 if [ "$CI" -eq 0 ]; then

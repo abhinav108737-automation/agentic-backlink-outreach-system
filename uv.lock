@@ -9,6 +9,7 @@ members = [
     "kb-contracts",
     "kb-core",
     "kb-providers",
+    "kb-runtime",
     "ken-backlink-os",
 ]
 
@@ -450,7 +451,6 @@ name = "kb-core"
 version = "0.1.0"
 source = { editable = "services/core" }
 dependencies = [
-    { name = "kb-agents" },
     { name = "kb-contracts" },
     { name = "kb-providers" },
     { name = "sqlalchemy" },
@@ -458,7 +458,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "kb-agents", editable = "agents" },
     { name = "kb-contracts", editable = "contracts/python" },
     { name = "kb-providers", editable = "services/providers" },
     { name = "sqlalchemy", specifier = ">=2.0" },
@@ -480,6 +479,25 @@ requires-dist = [
 ]
 
 [[package]]
+name = "kb-runtime"
+version = "0.1.0"
+source = { editable = "apps/runtime" }
+dependencies = [
+    { name = "kb-agents" },
+    { name = "kb-contracts" },
+    { name = "kb-core" },
+    { name = "kb-providers" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "kb-agents", editable = "agents" },
+    { name = "kb-contracts", editable = "contracts/python" },
+    { name = "kb-core", editable = "services/core" },
+    { name = "kb-providers", editable = "services/providers" },
+]
+
+[[package]]
 name = "ken-backlink-os"
 version = "0.1.0"
 source = { virtual = "." }
@@ -495,6 +513,7 @@ dev = [
     { name = "kb-contracts" },
     { name = "kb-core" },
     { name = "kb-providers" },
+    { name = "kb-runtime" },
     { name = "mypy" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pytest" },
@@ -518,6 +537,7 @@ dev = [
     { name = "kb-contracts", editable = "contracts/python" },
     { name = "kb-core", editable = "services/core" },
     { name = "kb-providers", editable = "services/providers" },
+    { name = "kb-runtime", editable = "apps/runtime" },
     { name = "mypy", specifier = ">=1.13" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pytest", specifier = ">=8.3" },

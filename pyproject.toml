@@ -10,7 +10,7 @@ package = false
 default-groups = ["dev"]
 
 [tool.uv.workspace]
-members = ["contracts/python", "services/core", "services/providers", "agents", "apps/api"]
+members = ["contracts/python", "services/core", "services/providers", "agents", "apps/api", "apps/runtime"]
 
 [tool.uv.sources]
 kb-contracts = { workspace = true }
@@ -18,10 +18,11 @@ kb-core = { workspace = true }
 kb-providers = { workspace = true }
 kb-agents = { workspace = true }
 kb-api = { workspace = true }
+kb-runtime = { workspace = true }
 
 [dependency-groups]
 dev = [
-  "kb-contracts", "kb-core", "kb-providers", "kb-agents", "kb-api",
+  "kb-contracts", "kb-core", "kb-providers", "kb-agents", "kb-api", "kb-runtime",
   "pytest>=8.3", "pytest-asyncio>=0.24", "hypothesis>=6.112", "ruff>=0.7",
   "mypy>=1.13", "import-linter>=2.1", "httpx>=0.27", "psycopg[binary]>=3.2",
   "alembic>=1.13", "sqlalchemy>=2.0", "pyyaml>=6", "types-pyyaml",
@@ -42,7 +43,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
-mypy_path = "contracts/python/src:services/core/src:services/providers/src:agents/src:apps/api/src"
+mypy_path = "contracts/python/src:services/core/src:services/providers/src:agents/src:apps/api/src:apps/runtime/src"
 namespace_packages = true
 explicit_package_bases = true
 
@@ -53,7 +54,7 @@ markers = ["req(id): requirement ID from docs/01 for traceability", "db: needs t
 addopts = "-ra --strict-markers"
 
 [tool.importlinter]
-root_packages = ["kb_contracts", "kb_core", "kb_providers", "kb_agents", "kb_api"]
+root_packages = ["kb_contracts", "kb_core", "kb_providers", "kb_agents", "kb_api", "kb_runtime"]
 include_external_packages = false
 
 [[tool.importlinter.contracts]]
@@ -69,6 +70,18 @@ source_modules = ["kb_agents"]
 forbidden_modules = [
   "kb_core.db", "kb_providers.email", "kb_providers.crawler", "kb_providers.browser",
 ]
+
+[[tool.importlinter.contracts]]
+name = "core does not import the agent layer above it"
+type = "forbidden"
+source_modules = ["kb_core"]
+forbidden_modules = ["kb_agents", "kb_api", "kb_runtime"]
+
+[[tool.importlinter.contracts]]
+name = "agents do not import the composition root"
+type = "forbidden"
+source_modules = ["kb_agents"]
+forbidden_modules = ["kb_runtime", "kb_api"]
 
 [[tool.importlinter.contracts]]
 name = "api does not import agent internals"

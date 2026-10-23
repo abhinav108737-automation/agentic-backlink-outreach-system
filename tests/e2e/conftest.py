@@ -98,8 +98,6 @@ import httpx  # noqa: E402
 import sqlalchemy as sa  # noqa: E402
 from kb_api.app import create_app  # noqa: E402
 from kb_api.deps import Services, build_services  # noqa: E402
-from kb_core.agentic import CapabilityDeps, build_agent_stack  # noqa: E402
-from kb_core.agentic.runtime import AgentStack  # noqa: E402
 from kb_core.db import tables as t  # noqa: E402
 from kb_core.db.seed import seed_policy_v1  # noqa: E402
 from kb_core.scheduling.clock import FakeClock  # noqa: E402
@@ -107,6 +105,7 @@ from kb_providers.crawler import MockCrawlerProvider  # noqa: E402
 from kb_providers.model import FakeModelProvider  # noqa: E402
 from kb_providers.search import MockSearchProvider  # noqa: E402
 from kb_providers.seo_metrics import MockSEOMetricsProvider  # noqa: E402
+from kb_runtime import AgentStack, CapabilityDeps, build_agent_stack  # noqa: E402
 
 TOKEN = "T0ken-" + "a1b2c3d4" * 6
 AUTH = {"Authorization": f"Bearer {TOKEN}"}

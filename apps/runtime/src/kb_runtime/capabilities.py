@@ -22,7 +22,6 @@ from kb_agents.tools.gateway import Capability, ToolContext
 from kb_contracts.enums import ActorType, ProspectStatus
 from kb_contracts.events import Actor
 from kb_contracts.providers import CrawlerProvider, SearchProvider, SEOMetricsProvider
-
 from kb_core.db.protocols import UnitOfWork, UnitOfWorkFactory
 from kb_core.discovery import InvalidUrl, canonicalize_url, registered_domain
 from kb_core.errors import EntityNotFound, InvalidInput

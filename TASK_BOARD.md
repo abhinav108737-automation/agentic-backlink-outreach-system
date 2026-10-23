@@ -31,14 +31,17 @@ Detail and resume plan: `docs/phase-reports/wave1-handoff.md`.
 - [x] Lane D agent runtime: Fake + Ollama model and embedding providers, ToolGateway with 9-stage checking and fail-closed auditing, per-agent scope enforcement, Discovery/Qualification/Research/Contact agents on typed outputs, agent-run persistence, prompt-injection eval
 - [x] **Lead: I1 integration COMPLETE (2026-10-23) — see `docs/phase-reports/i1.md`.** `kb_core.agentic` wires all 12 approved capabilities to real repositories, deterministic services and fixture-backed mock providers; run persistence and tool-call auditing use the real `AgentRunRepository`; the deterministic PolicyEngine gates every write tool. The slice is agent-driven end to end: one observed run took `supplychainlens.io` to **CONTACT_READY** with 2 contacts, rejected a spammy domain, and DEFERRED two missing-metric domains. 12 E2E tests in `tests/e2e/`.
 
-## Integration Checkpoint I1 — **PASSED 2026-10-23**
-Gate: `check.sh` exit 0 — **798 pytest** (12 new E2E) + 22 vitest, strict mypy 144 files,
-import-linter 3/3, contracts in sync at `0.2.0` (unchanged by I1), gitleaks clean.
+## Integration Checkpoint I1 — **PASSED 2026-10-23, STABILIZED 2026-10-23**
+Checkpoint `a201b9e`; stabilization commit follows. Gate: `check.sh` **exit 0** (exit code read
+directly, not through a pipe) — **813 pytest** (12 E2E + 15 import-boundary) + 22 vitest,
+strict mypy 144 files (now incl. `apps/runtime/src`), **import-linter 5/5**, contracts in sync
+at `0.2.0` (unchanged by I1 or stabilization), gitleaks clean.
 Agent containment proven against the real wired gateway: all 7 forbidden capabilities refused
 and audited, an out-of-scope wired tool refused, nothing written on refusal, `fetch_page` limited
 to http(s), no policy override, no direct email send.
 - [x] I1: Discovery → Qualification → Research → Contact → persistence → audit → API readback
 - [x] Three metric states preserved through the gateway; all four missing-metric cases DEFER
+- [x] **Stabilization: architectural inversion removed.** The wiring moved from `kb_core.agentic` to a new leaf package `apps/runtime/` → `kb_runtime`, so `kb_core` no longer depends on `kb_agents`. Two new import-linter contracts (`core does not import the agent layer above it`, `agents do not import the composition root`), `kb_runtime` added to `root_packages`, and 15 AST-based boundary tests in `tests/contract/test_import_boundaries.py` that also see function-level imports, so a deferred import cannot hide a forbidden dependency. The new rule was proven non-vacuous by injecting a violation and watching it break. All 12 agent-driven I1 tests pass unchanged.
 - [ ] **I2 (Wave 2, not started):** draft → mock send → reply → negotiate → publish → verify
 
 ### Known limitations accepted in Wave 1 (not defects to rediscover)
@@ -47,7 +50,8 @@ to http(s), no policy override, no direct email send.
 - **Obfuscated / JS-rendered email addresses are not extracted** (no browser provider in this wave).
 - **Qdrant rebuild is tested against the in-memory provider only**; the CLI was not run against live Qdrant or Ollama.
 - **ToolGateway capabilities are now really wired** (I1). Remaining stand-in: `read_memory` returns no snippets because MemoryService is Wave 2 — deliberate, so an agent is exercised against empty memory rather than invented snippets.
-- **`kb_core` depends on `kb_agents`** after I1 — an inversion, accepted because no existing package can legally host the composition root (`kb_api` may not import `kb_agents`). A dedicated composition-root package is a Wave-2 decision. Import-linter contract 2 protects the boundary automatically.
+- ~~`kb_core` depends on `kb_agents`~~ — **resolved.** `kb_runtime` (`apps/runtime/`) is now the composition root and a leaf; nothing imports it. Enforced by two new import-linter contracts plus boundary tests.
+- **When the API must eventually trigger agent runs (Wave 2+), do NOT relax `kb_api → kb_agents`.** Enqueue on the PostgreSQL job queue and let a separate worker process import `kb_runtime` (ADR-0008/0017). `GET /agent-runs` readback needs repositories only, so it needs no exception either.
 - **Two fixture domains are not registered domains** (`blog.datapulseanalytics.io`, `www.energyoutlookdaily.com`) while their metrics are keyed by host, so they DEFER as never-fetched. That is correct under ADR-0015; a subdomain-guessing fallback was deliberately NOT added because it could attribute one host's metrics to another.
 - **Two Ollama embedders exist** — `kb_providers/vector/embeddings.py` (Lane C) and `kb_providers/embedding/ollama.py` (Lane D). Real duplication; deduping is deferred rather than done mid-wave.
 - **`LOST → ELIGIBLE` fails closed** with `RECONTACT_COOLDOWN_UNDEFINED`: `PolicyBody` has no cooldown field (TBD).

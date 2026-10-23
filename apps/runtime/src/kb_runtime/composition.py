@@ -22,9 +22,9 @@ from kb_agents.tools.audit import RunStoreRecorder, ToolCallAudit
 from kb_agents.tools.gateway import PolicyDecision, ToolGateway
 from kb_contracts.enums import AgentName
 from kb_contracts.providers import ModelProvider
-
-from kb_core.agentic.capabilities import CapabilityDeps, build_capabilities
 from kb_core.db.protocols import UnitOfWorkFactory
+
+from kb_runtime.capabilities import CapabilityDeps, build_capabilities
 
 # Tools that cause a persistent write. The gate is consulted for these; pure reads are not
 # gated, so a paused campaign can still be inspected but not written to.

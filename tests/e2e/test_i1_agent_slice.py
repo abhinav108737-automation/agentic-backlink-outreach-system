@@ -16,9 +16,9 @@ import pytest
 import sqlalchemy as sa
 from kb_contracts.enums import AgentName, ProspectStatus, QualificationOutcome
 from kb_contracts.tools import FORBIDDEN_CAPABILITIES, TOOL_ALLOWLIST
-from kb_core.agentic.slice import persist_discovery, run_prospect_slice
 from kb_core.audit.service import OPERATOR
 from kb_core.db import tables as t
+from kb_runtime import persist_discovery, run_prospect_slice
 
 pytestmark = pytest.mark.db
 

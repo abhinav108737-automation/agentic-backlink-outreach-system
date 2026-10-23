@@ -17,13 +17,13 @@ from kb_agents.agents.qualification import QualificationTask
 from kb_agents.agents.research import ResearchTask
 from kb_contracts.enums import ProspectStatus, QualificationOutcome
 from kb_contracts.events import Actor
-
-from kb_core.agentic.runtime import AgentStack
 from kb_core.db.protocols import UnitOfWork, UnitOfWorkFactory
 from kb_core.errors import GuardFailed
 from kb_core.qualification.service import QualificationService
 from kb_core.ranking.service import RankingService
 from kb_core.transitions.service import TransitionService
+
+from kb_runtime.composition import AgentStack
 
 
 @dataclass
