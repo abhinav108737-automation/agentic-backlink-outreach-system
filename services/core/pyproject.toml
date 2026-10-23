@@ -2,7 +2,10 @@
 name = "kb-core"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["kb-contracts", "sqlalchemy>=2.0"]
+# kb-providers and kb-agents are needed only by kb_core.agentic, the I1 composition root:
+# it is the one place that may see both the agent runtime and the database (see that
+# package's docstring for why no other package can host it).
+dependencies = ["kb-contracts", "kb-providers", "kb-agents", "sqlalchemy>=2.0"]
 
 [build-system]
 requires = ["hatchling"]

@@ -29,14 +29,26 @@ Detail and resume plan: `docs/phase-reports/wave1-handoff.md`.
 - [x] Lane E outreach: 21-site fixture corpus (all 5 label classes), MockSearch/MockCrawler/MockSEOMetrics, ManualImport CSV, canonicalization + dedupe + stable `url_hash`, deterministic research and contact extraction, 151 offline unit tests incl. the mandatory ADR-0020 prompt-injection inertness suite
 - [x] Lane B backend: PolicyEngine (7 block codes, no short-circuit), hard eligibility with state-2/state-3 DEFER, ranking, TransitionService (frozen-table check → guards → optimistic version bump → audit in the same transaction), suppression, idempotency, audit service, `UowJobQueue` + `SystemClock`/`FakeClock` + bounded `drain_once`/`run_iterations`, kill switch, approvals, live campaign/prospect/approvals/settings/system APIs with problem+json errors
 - [x] Lane D agent runtime: Fake + Ollama model and embedding providers, ToolGateway with 9-stage checking and fail-closed auditing, per-agent scope enforcement, Discovery/Qualification/Research/Contact agents on typed outputs, agent-run persistence, prompt-injection eval
-- [ ] **Lead: I1 integration wiring + I1 checkpoint commit.** Register real capabilities behind the ToolGateway fakes (repos, crawler, search, PolicyEngine gate), then prove discover → qualify (incl. a DEFERRED prospect) → research → contact end to end through the API.
+- [x] **Lead: I1 integration COMPLETE (2026-10-23) — see `docs/phase-reports/i1.md`.** `kb_core.agentic` wires all 12 approved capabilities to real repositories, deterministic services and fixture-backed mock providers; run persistence and tool-call auditing use the real `AgentRunRepository`; the deterministic PolicyEngine gates every write tool. The slice is agent-driven end to end: one observed run took `supplychainlens.io` to **CONTACT_READY** with 2 contacts, rejected a spammy domain, and DEFERRED two missing-metric domains. 12 E2E tests in `tests/e2e/`.
+
+## Integration Checkpoint I1 — **PASSED 2026-10-23**
+Gate: `check.sh` exit 0 — **798 pytest** (12 new E2E) + 22 vitest, strict mypy 144 files,
+import-linter 3/3, contracts in sync at `0.2.0` (unchanged by I1), gitleaks clean.
+Agent containment proven against the real wired gateway: all 7 forbidden capabilities refused
+and audited, an out-of-scope wired tool refused, nothing written on refusal, `fetch_page` limited
+to http(s), no policy override, no direct email send.
+- [x] I1: Discovery → Qualification → Research → Contact → persistence → audit → API readback
+- [x] Three metric states preserved through the gateway; all four missing-metric cases DEFER
+- [ ] **I2 (Wave 2, not started):** draft → mock send → reply → negotiate → publish → verify
 
 ### Known limitations accepted in Wave 1 (not defects to rediscover)
 - **No Public Suffix List.** Registered-domain extraction uses a hand-maintained multi-label suffix set (`.co.uk`, `.com.au`, `.co.nz`, `.co.in`, `.co.jp`, `.com.br`, `.com.cn`, `.com.sg`, …). Known-wrong cases are pinned in tests: unlisted suffixes (`shop.example.com.ng` → `com.ng`) and private suffixes (`alice.github.io` → `github.io`, which would collapse distinct prospects onto one registered domain). No IDN/punycode normalisation.
 - **Injection detection is per text node.** A `mailto:` in a clean node adjacent to an injected node still yields a contact *candidate*. A candidate triggers no action and the deterministic gates still apply.
 - **Obfuscated / JS-rendered email addresses are not extracted** (no browser provider in this wave).
 - **Qdrant rebuild is tested against the in-memory provider only**; the CLI was not run against live Qdrant or Ollama.
-- **ToolGateway capabilities are fakes.** No real repository, crawler or search is wired behind them; `kb_agents/testing/fakes.py` holds the stand-ins. This is a deliberate consequence of the import boundary (`kb_agents` may not import `kb_core.db` or the crawler), and wiring them is Lead I1 work.
+- **ToolGateway capabilities are now really wired** (I1). Remaining stand-in: `read_memory` returns no snippets because MemoryService is Wave 2 — deliberate, so an agent is exercised against empty memory rather than invented snippets.
+- **`kb_core` depends on `kb_agents`** after I1 — an inversion, accepted because no existing package can legally host the composition root (`kb_api` may not import `kb_agents`). A dedicated composition-root package is a Wave-2 decision. Import-linter contract 2 protects the boundary automatically.
+- **Two fixture domains are not registered domains** (`blog.datapulseanalytics.io`, `www.energyoutlookdaily.com`) while their metrics are keyed by host, so they DEFER as never-fetched. That is correct under ADR-0015; a subdomain-guessing fallback was deliberately NOT added because it could attribute one host's metrics to another.
 - **Two Ollama embedders exist** — `kb_providers/vector/embeddings.py` (Lane C) and `kb_providers/embedding/ollama.py` (Lane D). Real duplication; deduping is deferred rather than done mid-wave.
 - **`LOST → ELIGIBLE` fails closed** with `RECONTACT_COOLDOWN_UNDEFINED`: `PolicyBody` has no cooldown field (TBD).
 - **Idempotency keys are honoured on campaign create only.** Approval decide and campaign pause/activate are safe on repeat via 409 instead.

@@ -450,13 +450,17 @@ name = "kb-core"
 version = "0.1.0"
 source = { editable = "services/core" }
 dependencies = [
+    { name = "kb-agents" },
     { name = "kb-contracts" },
+    { name = "kb-providers" },
     { name = "sqlalchemy" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "kb-agents", editable = "agents" },
     { name = "kb-contracts", editable = "contracts/python" },
+    { name = "kb-providers", editable = "services/providers" },
     { name = "sqlalchemy", specifier = ">=2.0" },
 ]
 

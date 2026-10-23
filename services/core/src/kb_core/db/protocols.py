@@ -27,6 +27,7 @@ from uuid import UUID
 from kb_contracts.domain import (
     ApprovalRequest,
     Campaign,
+    CampaignTarget,
     Contact,
     ContactChannel,
     Domain,
@@ -122,6 +123,12 @@ class CampaignRepository(Protocol):
         self, campaign_id: UUID, status: str, *, expected_version: int
     ) -> Campaign:
         """Transition writer only. Raises `OptimisticLockError` on a stale version."""
+        ...
+
+    async def list_targets(self, campaign_id: UUID) -> Sequence[CampaignTarget]:
+        """The campaign's targets, ordered by descending priority. Added at I1: discovery
+        needs the campaign's topics and seed keywords, and reading them is the only way an
+        agent can learn what to look for without being handed the database."""
         ...
 
 

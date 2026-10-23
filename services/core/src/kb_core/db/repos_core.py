@@ -16,6 +16,7 @@ from uuid import UUID
 import sqlalchemy as sa
 from kb_contracts.domain import (
     Campaign,
+    CampaignTarget,
     Domain,
     DomainMetric,
     PolicyBody,
@@ -159,6 +160,15 @@ class SqlCampaignRepository:
         return await keyset_page(
             self._s, t.campaigns, [], cursor=cursor, limit=limit, build=lambda r: dto(Campaign, r)
         )
+
+    async def list_targets(self, campaign_id: UUID) -> Sequence[CampaignTarget]:
+        rows = await fetch_all(
+            self._s,
+            sa.select(t.campaign_targets)
+            .where(t.campaign_targets.c.campaign_id == campaign_id)
+            .order_by(t.campaign_targets.c.priority.desc(), t.campaign_targets.c.created_at),
+        )
+        return tuple(dto(CampaignTarget, r) for r in rows)
 
     async def set_status(
         self, campaign_id: UUID, status: str, *, expected_version: int
