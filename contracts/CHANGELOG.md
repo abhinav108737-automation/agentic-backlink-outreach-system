@@ -6,6 +6,32 @@ a lane files a CCR with the Lead, the Lead edits `contracts/`, bumps the version
 here and regenerates the OpenAPI snapshot and the TS client. Lanes never edit `contracts/**`
 or `contracts/generated_ts/**` directly (ADR-0016).
 
+## 0.3.0 — 2026-10-25
+
+**CCR-003** (`docs/ccr/CCR-003.md`): typed Wave 2A outreach endpoints (C8, C9). Additive —
+no path removed, no `operation_id` changed, and `contracts/python/**` untouched apart from
+`CONTRACT_VERSION`.
+
+Four pre-registered `501` stubs became real operations: `approveMessage`, `sendMessage`
+(returns **202** — it enqueues an `outreach.send` job and never sends inline), `getThread`,
+`verifyBacklink` (also 202, enqueues `backlink.verify`).
+
+Eight new paths, all inside existing route modules so the frozen router registry
+(`routes/__init__.py`) was not edited: `/messages`, `/messages/{message_id}`, `/backlinks`,
+`/backlinks/{backlink_id}`, `/campaigns/{campaign_id}/sequences`,
+`/campaigns/{campaign_id}/sequences/{sequence_id}`, `/prospects/opportunities`,
+`/prospects/opportunities/{opportunity_id}`.
+
+Components: **37 → 57 schemas**. Request bodies live in `apps/api/src/kb_api/schemas/outreach.py`;
+responses reuse the already-frozen C2 DTOs. The snapshot strict-parses with no NaN/Infinity
+literals, so the CCR-002 rule still holds on the wire.
+
+### Not a contract change, recorded for traceability
+
+The outreach repositories (`sequences`, `messages`, `threads`, `replies`, `opportunities`,
+`backlinks`, `provider_accounts`) were added to `kb_core.db` in this wave, taking the unit of
+work from 18 to 25 repositories. `kb_core` is not a frozen contract, so this needed no CCR.
+
 ## 0.2.0 — 2026-10-18
 
 One revision bundling **CCR-001** and **CCR-002** (`docs/ccr/`). The version bumps once, after

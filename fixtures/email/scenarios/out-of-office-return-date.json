@@ -1,0 +1,15 @@
+{
+  "trigger": {
+    "sequence_step": 1
+  },
+  "after_seconds": 60,
+  "reply": {
+    "provider_message_id": "mock-reply-out-of-office-return-date",
+    "thread_ref": "{thread_ref}",
+    "from_address": "{recipient}",
+    "received_at": "2026-01-06T00:00:00Z",
+    "subject": "Automatic reply: Guest contribution idea",
+    "body": "I am out of the office until 2026-06-01 with limited access to email. I will respond when I return."
+  },
+  "expected_class": "out_of_office"
+}

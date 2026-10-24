@@ -1,0 +1,27 @@
+{
+  "thread_ref": "thread-opt-out-after-follow-up",
+  "messages": [
+    {
+      "idempotency_key": "thread-oo-1-out",
+      "to": "editor@editorial-desk.example.test",
+      "subject": "Guest contribution idea",
+      "body": "Hello, we would like to propose a guest article.",
+      "thread_ref": "thread-opt-out-after-follow-up"
+    },
+    {
+      "idempotency_key": "thread-oo-2-out",
+      "to": "editor@editorial-desk.example.test",
+      "subject": "Re: Guest contribution idea",
+      "body": "Following up on my note below.",
+      "thread_ref": "thread-opt-out-after-follow-up"
+    },
+    {
+      "provider_message_id": "thread-oo-2-in",
+      "thread_ref": "thread-opt-out-after-follow-up",
+      "from_address": "editor@editorial-desk.example.test",
+      "received_at": "2026-01-10T09:00:00Z",
+      "subject": "Re: Guest contribution idea",
+      "body": "Unsubscribe me please."
+    }
+  ]
+}

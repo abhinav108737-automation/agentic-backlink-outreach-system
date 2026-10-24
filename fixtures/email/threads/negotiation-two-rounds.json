@@ -1,0 +1,35 @@
+{
+  "thread_ref": "thread-negotiation-two-rounds",
+  "messages": [
+    {
+      "idempotency_key": "thread-neg-1-out",
+      "to": "editor@editorial-desk.example.test",
+      "subject": "Guest contribution idea",
+      "body": "Hello, we would like to propose a guest article on healthcare market research.",
+      "thread_ref": "thread-negotiation-two-rounds"
+    },
+    {
+      "provider_message_id": "thread-neg-1-in",
+      "thread_ref": "thread-negotiation-two-rounds",
+      "from_address": "editor@editorial-desk.example.test",
+      "received_at": "2026-01-06T10:00:00Z",
+      "subject": "Re: Guest contribution idea",
+      "body": "We charge an editorial fee of $250 per post. Would you consider a link exchange instead?"
+    },
+    {
+      "idempotency_key": "thread-neg-2-out",
+      "to": "editor@editorial-desk.example.test",
+      "subject": "Re: Guest contribution idea",
+      "body": "Thanks. We would prefer an unpaid editorial contribution. Could we discuss terms?",
+      "thread_ref": "thread-negotiation-two-rounds"
+    },
+    {
+      "provider_message_id": "thread-neg-2-in",
+      "thread_ref": "thread-negotiation-two-rounds",
+      "from_address": "editor@editorial-desk.example.test",
+      "received_at": "2026-01-07T09:00:00Z",
+      "subject": "Re: Guest contribution idea",
+      "body": "We can publish a sponsored post for $300. Please confirm today."
+    }
+  ]
+}

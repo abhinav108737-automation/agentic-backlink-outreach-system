@@ -59,6 +59,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/backlinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listbacklinks */
+        get: operations["listBacklinks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backlinks/{backlink_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Getbacklink
+         * @description The backlink and its append-only verification history.
+         */
+        get: operations["getBacklink"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/backlinks/{backlink_id}/verify": {
         parameters: {
             query?: never;
@@ -68,7 +105,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verifybacklink */
+        /**
+         * Verifybacklink
+         * @description Enqueue `backlink.verify`; returns 202 with the job reference and fetches nothing.
+         */
         post: operations["verifyBacklink"];
         delete?: never;
         options?: never;
@@ -166,6 +206,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/campaigns/{campaign_id}/sequences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listcampaignsequences */
+        get: operations["listCampaignSequences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/campaigns/{campaign_id}/sequences/{sequence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Getcampaignsequence */
+        get: operations["getCampaignSequence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/experiments": {
         parameters: {
             query?: never;
@@ -217,6 +291,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listmessages
+         * @description A sequence's messages in step/version order.
+         */
+        get: operations["listMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{message_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Getmessage */
+        get: operations["getMessage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/messages/{message_id}/approve": {
         parameters: {
             query?: never;
@@ -226,7 +337,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Approvemessage */
+        /**
+         * Approvemessage
+         * @description Record the operator's decision and move the message (APPROVED or REJECTED) in one
+         *     transaction. 409 when the message is not awaiting a decision.
+         */
         post: operations["approveMessage"];
         delete?: never;
         options?: never;
@@ -243,7 +358,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Sendmessage */
+        /**
+         * Sendmessage
+         * @description Re-check policy, mark the message QUEUED and enqueue `outreach.send`. Returns 202 with the
+         *     job reference; it never sends. 409 with `block_codes` when policy refuses.
+         */
         post: operations["sendMessage"];
         delete?: never;
         options?: never;
@@ -277,6 +396,40 @@ export interface paths {
         };
         /** Listprospects */
         get: operations["listProspects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/prospects/opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listopportunities */
+        get: operations["listOpportunities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/prospects/opportunities/{opportunity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Getopportunity */
+        get: operations["getOpportunity"];
         put?: never;
         post?: never;
         delete?: never;
@@ -434,7 +587,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Getthread */
+        /**
+         * Getthread
+         * @description The thread with its messages and replies.
+         */
         get: operations["getThread"];
         put?: never;
         post?: never;
@@ -498,11 +654,119 @@ export interface components {
          * @enum {string}
          */
         ApprovalStatus: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+        /** ApproveMessageRequest */
+        ApproveMessageRequest: {
+            decision: components["schemas"]["ApprovalStatus"];
+            /** Reason */
+            reason?: string | null;
+        };
         /**
          * AutonomyMode
          * @enum {string}
          */
         AutonomyMode: "shadow" | "guarded" | "autonomous";
+        /** Backlink */
+        Backlink: {
+            /**
+             * Consecutive Misses
+             * @default 0
+             */
+            consecutive_misses: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Expected Anchor */
+            expected_anchor?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Opportunity Id */
+            opportunity_id?: string | null;
+            /**
+             * Rel
+             * @default []
+             */
+            rel: string[];
+            /** Source Url */
+            source_url: string;
+            status: components["schemas"]["BacklinkStatus"];
+            /** Target Url */
+            target_url: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
+        /** BacklinkDetailView */
+        BacklinkDetailView: {
+            backlink: components["schemas"]["Backlink"];
+            /** Verifications */
+            verifications: components["schemas"]["BacklinkVerification"][];
+        };
+        /** BacklinkPage */
+        BacklinkPage: {
+            /** Items */
+            items: components["schemas"]["Backlink"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /**
+         * BacklinkStatus
+         * @enum {string}
+         */
+        BacklinkStatus: "EXPECTED" | "FOUND" | "VERIFIED" | "CHANGED" | "MISSING" | "LOST";
+        /** BacklinkVerification */
+        BacklinkVerification: {
+            /** Anchor Text */
+            anchor_text?: string | null;
+            /**
+             * Backlink Id
+             * Format: uuid
+             */
+            backlink_id: string;
+            /** Canonical Url */
+            canonical_url?: string | null;
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Final Url */
+            final_url?: string | null;
+            /** Http Status */
+            http_status?: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Link Found */
+            link_found: boolean;
+            /**
+             * Rel Attrs
+             * @default []
+             */
+            rel_attrs: string[];
+            /** Result */
+            result: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** Campaign */
         Campaign: {
             /** @default shadow */
@@ -682,6 +946,11 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /**
+         * DeliveryMode
+         * @enum {string}
+         */
+        DeliveryMode: "mock" | "real";
         /** Domain */
         Domain: {
             /**
@@ -750,6 +1019,45 @@ export interface components {
              */
             updated_at: string;
         };
+        /** GuestPostOpportunity */
+        GuestPostOpportunity: {
+            /** Agreed Terms */
+            agreed_terms?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Prospect Id
+             * Format: uuid
+             */
+            prospect_id: string;
+            /**
+             * Requires Approval
+             * @default false
+             */
+            requires_approval: boolean;
+            /** Sequence Id */
+            sequence_id?: string | null;
+            status: components["schemas"]["OpportunityStatus"];
+            /** Target Url */
+            target_url?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -775,6 +1083,16 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** MessageList */
+        MessageList: {
+            /** Items */
+            items: components["schemas"]["OutreachMessage"][];
+        };
+        /**
+         * MessageStatus
+         * @enum {string}
+         */
+        MessageStatus: "DRAFT" | "QA_FAILED" | "QA_PASSED" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "POLICY_BLOCKED" | "QUEUED" | "SENDING" | "RETRY_WAIT" | "SENT" | "DELIVERED" | "BOUNCED" | "FAILED" | "CANCELLED";
         /**
          * MetricReading
          * @description One required metric's current state. `value` is None unless `state == available`; an
@@ -792,6 +1110,111 @@ export interface components {
          * @enum {string}
          */
         MetricState: "available" | "unavailable" | "never_fetched";
+        /** OpportunityPage */
+        OpportunityPage: {
+            /** Items */
+            items: components["schemas"]["GuestPostOpportunity"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /**
+         * OpportunityStatus
+         * @enum {string}
+         */
+        OpportunityStatus: "OPEN" | "NEGOTIATING" | "AWAITING_APPROVAL" | "ESCALATED_TO_HUMAN" | "AGREED" | "CONTENT_IN_PROGRESS" | "CONTENT_SUBMITTED" | "REVISION_REQUESTED" | "PUBLISHED" | "LOST";
+        /** OutreachMessage */
+        OutreachMessage: {
+            /** Body */
+            body: string;
+            /** Claims */
+            claims?: {
+                [key: string]: string[];
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** @default mock */
+            delivery_mode: components["schemas"]["DeliveryMode"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Idempotency Key */
+            idempotency_key: string;
+            /** Message Version */
+            message_version: number;
+            /** Qa Result */
+            qa_result?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Sequence Id
+             * Format: uuid
+             */
+            sequence_id: string;
+            status: components["schemas"]["MessageStatus"];
+            /** Step No */
+            step_no: number;
+            /** Subject */
+            subject: string;
+            /** Thread Id */
+            thread_id?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
+        /** OutreachSequence */
+        OutreachSequence: {
+            /**
+             * Campaign Id
+             * Format: uuid
+             */
+            campaign_id: string;
+            /**
+             * Contact Channel Id
+             * Format: uuid
+             */
+            contact_channel_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Current Step
+             * @default 0
+             */
+            current_step: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Next Due At */
+            next_due_at?: string | null;
+            /** Policy Version Id */
+            policy_version_id?: string | null;
+            /**
+             * Prospect Id
+             * Format: uuid
+             */
+            prospect_id: string;
+            status: components["schemas"]["SequenceStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
         /** Prospect */
         Prospect: {
             /**
@@ -999,6 +1422,42 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** Reply */
+        Reply: {
+            /** Body Sanitized */
+            body_sanitized: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** From Normalized */
+            from_normalized: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Provider Message Id */
+            provider_message_id: string;
+            /** Raw Hash */
+            raw_hash: string;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /**
+             * Sequence Id
+             * Format: uuid
+             */
+            sequence_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** ResearchDossier */
         ResearchDossier: {
             /** Agent Run Id */
@@ -1037,6 +1496,37 @@ export interface components {
             /** Version No */
             version_no: number;
         };
+        /**
+         * SendAccepted
+         * @description 202: the send was queued, not performed. Delivery is the worker's job.
+         */
+        SendAccepted: {
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /** Job Type */
+            job_type: string;
+            message: components["schemas"]["OutreachMessage"];
+            /**
+             * Replayed
+             * @default false
+             */
+            replayed: boolean;
+        };
+        /** SequencePage */
+        SequencePage: {
+            /** Items */
+            items: components["schemas"]["OutreachSequence"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /**
+         * SequenceStatus
+         * @enum {string}
+         */
+        SequenceStatus: "PLANNED" | "READY" | "POLICY_BLOCKED" | "WAITING_REPLY" | "FOLLOW_UP_DUE" | "COMPLETED_NO_REPLY" | "REPLIED" | "OPTED_OUT" | "BOUNCED" | "CANCELLED";
         /** SettingsView */
         SettingsView: {
             autonomy_mode: components["schemas"]["AutonomyMode"];
@@ -1066,6 +1556,27 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** ThreadView */
+        ThreadView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Messages */
+            messages: components["schemas"]["OutreachMessage"][];
+            /** Provider Thread Id */
+            provider_thread_id?: string | null;
+            /** Replies */
+            replies: components["schemas"]["Reply"][];
+            /**
+             * Sequence Id
+             * Format: uuid
+             */
+            sequence_id: string;
+            /** Subject */
+            subject?: string | null;
+        };
         /**
          * UpdateSettingsRequest
          * @description Only the kill switch is mutable at runtime. `real_send_enabled` and `autonomy_mode` are
@@ -1087,6 +1598,26 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** VerifyAccepted */
+        VerifyAccepted: {
+            /**
+             * Backlink Id
+             * Format: uuid
+             */
+            backlink_id: string;
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /** Job Type */
+            job_type: string;
+            /**
+             * Replayed
+             * @default false
+             */
+            replayed: boolean;
         };
     };
     responses: never;
@@ -1217,9 +1748,13 @@ export interface operations {
             };
         };
     };
-    verifyBacklink: {
+    listBacklinks: {
         parameters: {
-            query?: never;
+            query?: {
+                status?: components["schemas"]["BacklinkStatus"] | null;
+                cursor?: string | null;
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1227,12 +1762,85 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["BacklinkPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getBacklink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                backlink_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BacklinkDetailView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verifyBacklink: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                backlink_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1440,6 +2048,73 @@ export interface operations {
             };
         };
     };
+    listCampaignSequences: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["SequenceStatus"] | null;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SequencePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getCampaignSequence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                campaign_id: string;
+                sequence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutreachSequence"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     listExperiments: {
         parameters: {
             query?: never;
@@ -1502,9 +2177,11 @@ export interface operations {
             };
         };
     };
-    approveMessage: {
+    listMessages: {
         parameters: {
-            query?: never;
+            query: {
+                sequence_id: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1512,12 +2189,89 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MessageList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutreachMessage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approveMessage: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutreachMessage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1525,19 +2279,32 @@ export interface operations {
     sendMessage: {
         parameters: {
             query?: never;
-            header?: never;
-            path?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                message_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SendAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1583,6 +2350,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProspectPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listOpportunities: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["OpportunityStatus"] | null;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getOpportunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPostOpportunity"];
                 };
             };
             /** @description Validation Error */
@@ -1837,18 +2668,29 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                thread_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            501: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ThreadView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

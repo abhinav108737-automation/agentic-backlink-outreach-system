@@ -4,11 +4,14 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Header, Query, Request, Response
-from kb_contracts.domain import Campaign
+from kb_contracts.domain import Campaign, OutreachSequence
+from kb_contracts.enums import SequenceStatus
 from kb_core.audit.service import OPERATOR
+from kb_core.errors import EntityNotFound
 
 from kb_api.deps import ServicesDep, correlation_id
 from kb_api.schemas.campaigns import CampaignActionRequest, CampaignPage, CreateCampaignRequest
+from kb_api.schemas.outreach import SequencePage
 
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
 
@@ -96,3 +99,34 @@ async def pauseCampaign(
         reason=body.reason if body else None,
         correlation_id=correlation_id(request),
     )
+
+
+@router.get(
+    "/{campaign_id}/sequences", operation_id="listCampaignSequences", response_model=SequencePage
+)
+async def listCampaignSequences(
+    campaign_id: UUID,
+    svc: ServicesDep,
+    status: SequenceStatus | None = None,
+    cursor: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> SequencePage:
+    await svc.campaigns.get(campaign_id)  # 404 for an unknown campaign
+    page = await svc.readback.list_sequences(
+        campaign_id=campaign_id, status=status, cursor=cursor, limit=limit
+    )
+    return SequencePage(items=list(page.items), next_cursor=page.next_cursor)
+
+
+@router.get(
+    "/{campaign_id}/sequences/{sequence_id}",
+    operation_id="getCampaignSequence",
+    response_model=OutreachSequence,
+)
+async def getCampaignSequence(
+    campaign_id: UUID, sequence_id: UUID, svc: ServicesDep
+) -> OutreachSequence:
+    sequence = await svc.readback.get_sequence(sequence_id)
+    if sequence.campaign_id != campaign_id:
+        raise EntityNotFound("outreach_sequence", sequence_id)
+    return sequence

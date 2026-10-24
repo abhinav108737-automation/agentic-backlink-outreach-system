@@ -1,4 +1,4 @@
-"""`SqlUnitOfWork`: one PostgreSQL transaction exposing all 18 repositories.
+"""`SqlUnitOfWork`: one PostgreSQL transaction exposing all 25 repositories.
 
 Atomicity guarantee (docs/13 enforcement rule 4): the unit of work owns exactly one
 `AsyncSession`, hence one connection and one transaction. Every repository is constructed over
@@ -23,6 +23,7 @@ from kb_core.db.protocols import (
     AgentRunRepository,
     ApprovalRepository,
     AuditRepository,
+    BacklinkRepository,
     CampaignRepository,
     ContactRepository,
     DomainMetricRepository,
@@ -31,13 +32,19 @@ from kb_core.db.protocols import (
     EvidenceRepository,
     IdempotencyRepository,
     JobRepository,
+    MessageRepository,
+    OpportunityRepository,
     PolicyRepository,
     ProspectRepository,
     ProspectUrlRepository,
+    ProviderAccountRepository,
     QualificationRepository,
     RankingRepository,
+    ReplyRepository,
+    SequenceRepository,
     SettingsRepository,
     SuppressionRepository,
+    ThreadRepository,
     UnitOfWork,
     UnitOfWorkFactory,
 )
@@ -49,6 +56,15 @@ from kb_core.db.repos_core import (
     SqlPolicyRepository,
     SqlProspectRepository,
     SqlProspectUrlRepository,
+)
+from kb_core.db.repos_outreach import (
+    SqlBacklinkRepository,
+    SqlMessageRepository,
+    SqlOpportunityRepository,
+    SqlProviderAccountRepository,
+    SqlReplyRepository,
+    SqlSequenceRepository,
+    SqlThreadRepository,
 )
 from kb_core.db.repos_research import (
     SqlContactRepository,
@@ -88,6 +104,13 @@ class SqlUnitOfWork:
     approvals: ApprovalRepository
     settings: SettingsRepository
     agent_runs: AgentRunRepository
+    sequences: SequenceRepository
+    messages: MessageRepository
+    threads: ThreadRepository
+    replies: ReplyRepository
+    opportunities: OpportunityRepository
+    backlinks: BacklinkRepository
+    provider_accounts: ProviderAccountRepository
 
     def __init__(self, sessions: async_sessionmaker[AsyncSession]) -> None:
         self._session: AsyncSession = sessions()
@@ -111,6 +134,13 @@ class SqlUnitOfWork:
         self.approvals = SqlApprovalRepository(s)
         self.settings = SqlSettingsRepository(s)
         self.agent_runs = SqlAgentRunRepository(s)
+        self.sequences = SqlSequenceRepository(s)
+        self.messages = SqlMessageRepository(s)
+        self.threads = SqlThreadRepository(s)
+        self.replies = SqlReplyRepository(s)
+        self.opportunities = SqlOpportunityRepository(s)
+        self.backlinks = SqlBacklinkRepository(s)
+        self.provider_accounts = SqlProviderAccountRepository(s)
 
     @property
     def session(self) -> AsyncSession:

@@ -16,7 +16,10 @@ from kb_core.policy.engine import DeterministicPolicyEngine
 from kb_core.prospects.service import ProspectQueryService
 from kb_core.qualification.service import QualificationService
 from kb_core.ranking.service import RankingService
+from kb_core.readback.service import OutreachReadService
 from kb_core.scheduling.clock import SystemClock
+from kb_core.sending.service import SendService
+from kb_core.sending.verify import BacklinkVerifyService
 from kb_core.settings.service import SettingsService
 from kb_core.transitions.service import TransitionService
 
@@ -34,14 +37,18 @@ class Services:
     system_settings: SettingsService
     qualification: QualificationService
     ranking: RankingService
+    send: SendService
+    backlink_verify: BacklinkVerifyService
+    readback: OutreachReadService
 
 
 def build_services(
     settings: Settings, uow_factory: UnitOfWorkFactory, clock: Clock | None = None
 ) -> Services:
     clk = clock or SystemClock()
-    policy = DeterministicPolicyEngine(uow_factory, settings)
+    policy = DeterministicPolicyEngine(uow_factory, settings, clk)
     transitions = TransitionService(uow_factory, clk)
+    approvals = ApprovalService(uow_factory)
     return Services(
         settings=settings,
         uow_factory=uow_factory,
@@ -50,10 +57,13 @@ def build_services(
         transitions=transitions,
         campaigns=CampaignService(uow_factory, transitions, IdempotencyService()),
         prospects=ProspectQueryService(uow_factory),
-        approvals=ApprovalService(uow_factory),
+        approvals=approvals,
         system_settings=SettingsService(uow_factory),
         qualification=QualificationService(uow_factory, policy, transitions),
         ranking=RankingService(uow_factory, transitions),
+        send=SendService(uow_factory, policy, transitions, approvals, clk),
+        backlink_verify=BacklinkVerifyService(uow_factory, clk),
+        readback=OutreachReadService(uow_factory),
     )
 
 

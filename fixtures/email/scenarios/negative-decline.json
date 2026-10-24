@@ -1,0 +1,15 @@
+{
+  "trigger": {
+    "sequence_step": 1
+  },
+  "after_seconds": 10800,
+  "reply": {
+    "provider_message_id": "mock-reply-negative-decline",
+    "thread_ref": "{thread_ref}",
+    "from_address": "{recipient}",
+    "received_at": "2026-01-06T00:00:00Z",
+    "subject": "Re: Guest contribution idea",
+    "body": "Thanks, but we are not interested in guest posts at this time.\n\nThe Editor"
+  },
+  "expected_class": "negative"
+}

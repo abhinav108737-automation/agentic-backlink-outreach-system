@@ -121,6 +121,31 @@
         "title": "ApprovalStatus",
         "type": "string"
       },
+      "ApproveMessageRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/ApprovalStatus"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "ApproveMessageRequest",
+        "type": "object"
+      },
       "AutonomyMode": {
         "enum": [
           "shadow",
@@ -129,6 +154,249 @@
         ],
         "title": "AutonomyMode",
         "type": "string"
+      },
+      "Backlink": {
+        "additionalProperties": false,
+        "properties": {
+          "consecutive_misses": {
+            "default": 0,
+            "title": "Consecutive Misses",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expected_anchor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Anchor"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "opportunity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opportunity Id"
+          },
+          "rel": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Rel",
+            "type": "array"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BacklinkStatus"
+          },
+          "target_url": {
+            "title": "Target Url",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "version",
+          "source_url",
+          "target_url",
+          "status"
+        ],
+        "title": "Backlink",
+        "type": "object"
+      },
+      "BacklinkDetailView": {
+        "properties": {
+          "backlink": {
+            "$ref": "#/components/schemas/Backlink"
+          },
+          "verifications": {
+            "items": {
+              "$ref": "#/components/schemas/BacklinkVerification"
+            },
+            "title": "Verifications",
+            "type": "array"
+          }
+        },
+        "required": [
+          "backlink",
+          "verifications"
+        ],
+        "title": "BacklinkDetailView",
+        "type": "object"
+      },
+      "BacklinkPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Backlink"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "BacklinkPage",
+        "type": "object"
+      },
+      "BacklinkStatus": {
+        "enum": [
+          "EXPECTED",
+          "FOUND",
+          "VERIFIED",
+          "CHANGED",
+          "MISSING",
+          "LOST"
+        ],
+        "title": "BacklinkStatus",
+        "type": "string"
+      },
+      "BacklinkVerification": {
+        "additionalProperties": false,
+        "properties": {
+          "anchor_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anchor Text"
+          },
+          "backlink_id": {
+            "format": "uuid",
+            "title": "Backlink Id",
+            "type": "string"
+          },
+          "canonical_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Url"
+          },
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "final_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Url"
+          },
+          "http_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Http Status"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "link_found": {
+            "title": "Link Found",
+            "type": "boolean"
+          },
+          "rel_attrs": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Rel Attrs",
+            "type": "array"
+          },
+          "result": {
+            "title": "Result",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "backlink_id",
+          "checked_at",
+          "link_found",
+          "result"
+        ],
+        "title": "BacklinkVerification",
+        "type": "object"
       },
       "Campaign": {
         "additionalProperties": false,
@@ -563,6 +831,14 @@
         "title": "DecideApprovalRequest",
         "type": "object"
       },
+      "DeliveryMode": {
+        "enum": [
+          "mock",
+          "real"
+        ],
+        "title": "DeliveryMode",
+        "type": "string"
+      },
       "Domain": {
         "additionalProperties": false,
         "properties": {
@@ -677,6 +953,82 @@
         "title": "EvidenceItem",
         "type": "object"
       },
+      "GuestPostOpportunity": {
+        "additionalProperties": false,
+        "properties": {
+          "agreed_terms": {
+            "additionalProperties": true,
+            "title": "Agreed Terms",
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "prospect_id": {
+            "format": "uuid",
+            "title": "Prospect Id",
+            "type": "string"
+          },
+          "requires_approval": {
+            "default": false,
+            "title": "Requires Approval",
+            "type": "boolean"
+          },
+          "sequence_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OpportunityStatus"
+          },
+          "target_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Url"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "version",
+          "prospect_id",
+          "status"
+        ],
+        "title": "GuestPostOpportunity",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -768,6 +1120,43 @@
         "title": "KillSwitchView",
         "type": "object"
       },
+      "MessageList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OutreachMessage"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "MessageList",
+        "type": "object"
+      },
+      "MessageStatus": {
+        "enum": [
+          "DRAFT",
+          "QA_FAILED",
+          "QA_PASSED",
+          "PENDING_APPROVAL",
+          "APPROVED",
+          "REJECTED",
+          "POLICY_BLOCKED",
+          "QUEUED",
+          "SENDING",
+          "RETRY_WAIT",
+          "SENT",
+          "DELIVERED",
+          "BOUNCED",
+          "FAILED",
+          "CANCELLED"
+        ],
+        "title": "MessageStatus",
+        "type": "string"
+      },
       "MetricReading": {
         "additionalProperties": false,
         "description": "One required metric's current state. `value` is None unless `state == available`; an\nunavailable or never-fetched metric is `null` on the wire, never 0 and never NaN.",
@@ -806,6 +1195,233 @@
         ],
         "title": "MetricState",
         "type": "string"
+      },
+      "OpportunityPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GuestPostOpportunity"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "OpportunityPage",
+        "type": "object"
+      },
+      "OpportunityStatus": {
+        "enum": [
+          "OPEN",
+          "NEGOTIATING",
+          "AWAITING_APPROVAL",
+          "ESCALATED_TO_HUMAN",
+          "AGREED",
+          "CONTENT_IN_PROGRESS",
+          "CONTENT_SUBMITTED",
+          "REVISION_REQUESTED",
+          "PUBLISHED",
+          "LOST"
+        ],
+        "title": "OpportunityStatus",
+        "type": "string"
+      },
+      "OutreachMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "claims": {
+            "additionalProperties": {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Claims",
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "delivery_mode": {
+            "$ref": "#/components/schemas/DeliveryMode",
+            "default": "mock"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "message_version": {
+            "title": "Message Version",
+            "type": "integer"
+          },
+          "qa_result": {
+            "additionalProperties": true,
+            "title": "Qa Result",
+            "type": "object"
+          },
+          "sequence_id": {
+            "format": "uuid",
+            "title": "Sequence Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MessageStatus"
+          },
+          "step_no": {
+            "title": "Step No",
+            "type": "integer"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "version",
+          "sequence_id",
+          "step_no",
+          "message_version",
+          "status",
+          "subject",
+          "body",
+          "idempotency_key"
+        ],
+        "title": "OutreachMessage",
+        "type": "object"
+      },
+      "OutreachSequence": {
+        "additionalProperties": false,
+        "properties": {
+          "campaign_id": {
+            "format": "uuid",
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "contact_channel_id": {
+            "format": "uuid",
+            "title": "Contact Channel Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_step": {
+            "default": 0,
+            "title": "Current Step",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "policy_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Version Id"
+          },
+          "prospect_id": {
+            "format": "uuid",
+            "title": "Prospect Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SequenceStatus"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "version",
+          "campaign_id",
+          "prospect_id",
+          "contact_channel_id",
+          "status"
+        ],
+        "title": "OutreachSequence",
+        "type": "object"
       },
       "Prospect": {
         "additionalProperties": false,
@@ -1225,6 +1841,65 @@
         "title": "ReadinessReport",
         "type": "object"
       },
+      "Reply": {
+        "additionalProperties": false,
+        "properties": {
+          "body_sanitized": {
+            "title": "Body Sanitized",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "from_normalized": {
+            "title": "From Normalized",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "provider_message_id": {
+            "title": "Provider Message Id",
+            "type": "string"
+          },
+          "raw_hash": {
+            "title": "Raw Hash",
+            "type": "string"
+          },
+          "received_at": {
+            "format": "date-time",
+            "title": "Received At",
+            "type": "string"
+          },
+          "sequence_id": {
+            "format": "uuid",
+            "title": "Sequence Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "sequence_id",
+          "provider_message_id",
+          "from_normalized",
+          "received_at",
+          "body_sanitized",
+          "raw_hash"
+        ],
+        "title": "Reply",
+        "type": "object"
+      },
       "ResearchDossier": {
         "additionalProperties": false,
         "properties": {
@@ -1292,6 +1967,78 @@
         ],
         "title": "ResearchDossier",
         "type": "object"
+      },
+      "SendAccepted": {
+        "description": "202: the send was queued, not performed. Delivery is the worker's job.",
+        "properties": {
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "job_type": {
+            "title": "Job Type",
+            "type": "string"
+          },
+          "message": {
+            "$ref": "#/components/schemas/OutreachMessage"
+          },
+          "replayed": {
+            "default": false,
+            "title": "Replayed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "job_id",
+          "job_type"
+        ],
+        "title": "SendAccepted",
+        "type": "object"
+      },
+      "SequencePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OutreachSequence"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "SequencePage",
+        "type": "object"
+      },
+      "SequenceStatus": {
+        "enum": [
+          "PLANNED",
+          "READY",
+          "POLICY_BLOCKED",
+          "WAITING_REPLY",
+          "FOLLOW_UP_DUE",
+          "COMPLETED_NO_REPLY",
+          "REPLIED",
+          "OPTED_OUT",
+          "BOUNCED",
+          "CANCELLED"
+        ],
+        "title": "SequenceStatus",
+        "type": "string"
       },
       "SettingsView": {
         "properties": {
@@ -1371,6 +2118,64 @@
         "title": "SystemHealthView",
         "type": "object"
       },
+      "ThreadView": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/OutreachMessage"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "provider_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Thread Id"
+          },
+          "replies": {
+            "items": {
+              "$ref": "#/components/schemas/Reply"
+            },
+            "title": "Replies",
+            "type": "array"
+          },
+          "sequence_id": {
+            "format": "uuid",
+            "title": "Sequence Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          }
+        },
+        "required": [
+          "id",
+          "sequence_id",
+          "messages",
+          "replies"
+        ],
+        "title": "ThreadView",
+        "type": "object"
+      },
       "UpdateSettingsRequest": {
         "additionalProperties": false,
         "description": "Only the kill switch is mutable at runtime. `real_send_enabled` and `autonomy_mode` are\ndeliberately absent (extra fields are rejected): enabling real send needs an approved\nlive_send_activation (ADR-0007) and is not available in this build.",
@@ -1428,12 +2233,42 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VerifyAccepted": {
+        "properties": {
+          "backlink_id": {
+            "format": "uuid",
+            "title": "Backlink Id",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "job_type": {
+            "title": "Job Type",
+            "type": "string"
+          },
+          "replayed": {
+            "default": false,
+            "title": "Replayed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "backlink_id",
+          "job_id",
+          "job_type"
+        ],
+        "title": "VerifyAccepted",
+        "type": "object"
       }
     }
   },
   "info": {
     "title": "Ken Backlink OS API",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -1610,17 +2445,179 @@
         ]
       }
     },
-    "/backlinks/{backlink_id}/verify": {
-      "post": {
-        "operationId": "verifyBacklink",
+    "/backlinks": {
+      "get": {
+        "operationId": "listBacklinks",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BacklinkStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
-          "501": {
+          "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/BacklinkPage"
+                }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listbacklinks",
+        "tags": [
+          "Backlinks"
+        ]
+      }
+    },
+    "/backlinks/{backlink_id}": {
+      "get": {
+        "description": "The backlink and its append-only verification history.",
+        "operationId": "getBacklink",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "backlink_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Backlink Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacklinkDetailView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Getbacklink",
+        "tags": [
+          "Backlinks"
+        ]
+      }
+    },
+    "/backlinks/{backlink_id}/verify": {
+      "post": {
+        "description": "Enqueue `backlink.verify`; returns 202 with the job reference and fetches nothing.",
+        "operationId": "verifyBacklink",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "backlink_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Backlink Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Verifybacklink",
@@ -1971,6 +2968,146 @@
         ]
       }
     },
+    "/campaigns/{campaign_id}/sequences": {
+      "get": {
+        "operationId": "listCampaignSequences",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SequenceStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SequencePage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listcampaignsequences",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/campaigns/{campaign_id}/sequences/{sequence_id}": {
+      "get": {
+        "operationId": "getCampaignSequence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sequence_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sequence Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutreachSequence"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Getcampaignsequence",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/experiments": {
       "get": {
         "operationId": "listExperiments",
@@ -2036,17 +3173,155 @@
         ]
       }
     },
-    "/messages/{message_id}/approve": {
-      "post": {
-        "operationId": "approveMessage",
+    "/messages": {
+      "get": {
+        "description": "A sequence's messages in step/version order.",
+        "operationId": "listMessages",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sequence_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sequence Id",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "501": {
+          "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/MessageList"
+                }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listmessages",
+        "tags": [
+          "Outreach"
+        ]
+      }
+    },
+    "/messages/{message_id}": {
+      "get": {
+        "operationId": "getMessage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutreachMessage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Getmessage",
+        "tags": [
+          "Outreach"
+        ]
+      }
+    },
+    "/messages/{message_id}/approve": {
+      "post": {
+        "description": "Record the operator's decision and move the message (APPROVED or REJECTED) in one\ntransaction. 409 when the message is not awaiting a decision.",
+        "operationId": "approveMessage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Message Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveMessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutreachMessage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Approvemessage",
@@ -2057,15 +3332,56 @@
     },
     "/messages/{message_id}/send": {
       "post": {
+        "description": "Re-check policy, mark the message QUEUED and enqueue `outreach.send`. Returns 202 with the\njob reference; it never sends. 409 with `block_codes` when policy refuses.",
         "operationId": "sendMessage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Message Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "responses": {
-          "501": {
+          "202": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SendAccepted"
+                }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Sendmessage",
@@ -2182,6 +3498,126 @@
           }
         },
         "summary": "Listprospects",
+        "tags": [
+          "Prospects"
+        ]
+      }
+    },
+    "/prospects/opportunities": {
+      "get": {
+        "operationId": "listOpportunities",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OpportunityStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listopportunities",
+        "tags": [
+          "Prospects"
+        ]
+      }
+    },
+    "/prospects/opportunities/{opportunity_id}": {
+      "get": {
+        "operationId": "getOpportunity",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opportunity_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Opportunity Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestPostOpportunity"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Getopportunity",
         "tags": [
           "Prospects"
         ]
@@ -2450,15 +3886,40 @@
     },
     "/threads/{thread_id}": {
       "get": {
+        "description": "The thread with its messages and replies.",
         "operationId": "getThread",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "501": {
+          "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadView"
+                }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Getthread",

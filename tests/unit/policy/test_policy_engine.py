@@ -196,6 +196,7 @@ async def test_reject_on_missing_policy_still_reports_metric_missing():
 async def test_real_send_disabled_by_default_and_when_mode_unstated():
     sc = Scenario(PolicyBody(require_approval_for_send=False))
     c = await sc.campaign()
+    await sc.sender(c)  # SENDER_INVALID fires by default; give the campaign a sender
     for ctx in ({"delivery_mode": "real"}, {}):
         d = await sc.policy.check(req(c, action="send", **ctx))
         assert BlockCode.REAL_SEND_DISABLED in d.block_codes
@@ -206,6 +207,7 @@ async def test_real_send_disabled_by_default_and_when_mode_unstated():
 async def test_mock_send_requires_message_approval_then_passes_once_approved():
     sc = Scenario()  # require_approval_for_send defaults True
     c = await sc.campaign()
+    await sc.sender(c)  # SENDER_INVALID fires by default; give the campaign a sender
     r = req(c, action="enqueue_send", delivery_mode="mock")
     d = await sc.policy.check(r)
     assert d.block_codes == (BlockCode.APPROVAL_REQUIRED,) and d.requires_approval
@@ -243,6 +245,7 @@ async def test_real_send_enabled_still_needs_live_send_activation_approval():
     settings = Settings(_env_file=None, real_send_enabled=True, autonomy_mode="guarded")
     sc = Scenario(PolicyBody(require_approval_for_send=False), settings=settings)
     c = await sc.campaign()
+    await sc.sender(c)  # SENDER_INVALID fires by default; give the campaign a sender
     r = req(c, action="send", delivery_mode="real")
     d = await sc.policy.check(r)
     assert d.block_codes == (BlockCode.APPROVAL_REQUIRED,)

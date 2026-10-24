@@ -26,6 +26,8 @@ from uuid import UUID
 
 from kb_contracts.domain import (
     ApprovalRequest,
+    Backlink,
+    BacklinkVerification,
     Campaign,
     CampaignTarget,
     Contact,
@@ -33,19 +35,28 @@ from kb_contracts.domain import (
     Domain,
     DomainMetric,
     EvidenceItem,
+    GuestPostOpportunity,
+    OutreachMessage,
+    OutreachSequence,
     PolicyVersion,
     Prospect,
     ProspectUrl,
     QualificationDecision,
     RankingResult,
+    Reply,
+    ReplyClassification,
     ResearchDossier,
     ScheduledJob,
     SuppressionEntry,
 )
 from kb_contracts.enums import (
     ApprovalStatus,
+    BacklinkStatus,
     JobStatus,
+    MessageStatus,
+    OpportunityStatus,
     ProspectStatus,
+    SequenceStatus,
     SuppressionScope,
 )
 
@@ -461,6 +472,276 @@ class AgentRunRepository(Protocol):
 
 
 # --------------------------------------------------------------------------------------------
+# Outreach (Wave 2A). Added by the Lead when both lanes blocked on the absence of these: the
+# tables, the DTOs and the state machines all existed, only the repositories were missing.
+#
+# Nothing here writes a `status` column except the `set_status` methods, which exist so that
+# `TransitionService` can perform a guarded, audited, optimistically-locked transition. No
+# other caller may use them to move a state machine directly.
+# --------------------------------------------------------------------------------------------
+
+
+class SequenceRepository(Protocol):
+    async def get(self, sequence_id: UUID) -> OutreachSequence | None: ...
+    async def create(
+        self,
+        *,
+        campaign_id: UUID,
+        prospect_id: UUID,
+        contact_channel_id: UUID,
+        policy_version_id: UUID | None = None,
+    ) -> OutreachSequence: ...
+
+    async def list(
+        self,
+        *,
+        campaign_id: UUID | None = None,
+        status: SequenceStatus | None = None,
+        cursor: str | None = None,
+        limit: int = 50,
+    ) -> Page[OutreachSequence]: ...
+
+    async def set_status(
+        self, sequence_id: UUID, status: SequenceStatus, *, expected_version: int
+    ) -> OutreachSequence:
+        """Transition writer only. Raises `OptimisticLockError` on a stale version."""
+        ...
+
+    async def set_next_due(self, sequence_id: UUID, *, run_at: datetime | None) -> None: ...
+    async def advance_step(self, sequence_id: UUID) -> int:
+        """Increment `current_step` and return the new value."""
+        ...
+
+
+class MessageRepository(Protocol):
+    async def get(self, message_id: UUID) -> OutreachMessage | None: ...
+    async def create(
+        self,
+        *,
+        sequence_id: UUID,
+        step_no: int,
+        subject: str,
+        body: str,
+        idempotency_key: str,
+        claims: dict[str, Any] | None = None,
+        thread_id: UUID | None = None,
+        agent_run_id: UUID | None = None,
+        message_version: int = 1,
+    ) -> OutreachMessage:
+        """Honours `UNIQUE(sequence_id, step_no, message_version)` and the
+        `one_live_message_per_step` partial index: a second live message for a step is a
+        conflict, not a silent second row."""
+        ...
+
+    async def get_by_idempotency_key(self, key: str) -> OutreachMessage | None:
+        """The crash-recovery lookup. A message found in SENDING is reconciled by this key
+        before any retry, so a send is never duplicated."""
+        ...
+
+    async def live_for_step(self, sequence_id: UUID, step_no: int) -> OutreachMessage | None:
+        """The not-yet-terminal message for a step, if any. Backs DUPLICATE_STEP."""
+        ...
+
+    async def live_for_channel(
+        self, campaign_id: UUID, contact_channel_id: UUID
+    ) -> Sequence[OutreachMessage]:
+        """Live messages already aimed at a contact channel in this campaign. Backs
+        DUPLICATE_CONTACT."""
+        ...
+
+    async def list_for_sequence(self, sequence_id: UUID) -> Sequence[OutreachMessage]: ...
+
+    async def count_sent_since(
+        self,
+        *,
+        since: datetime,
+        campaign_id: UUID | None = None,
+        domain_id: UUID | None = None,
+        contact_channel_id: UUID | None = None,
+    ) -> int:
+        """Messages that left the system within a window, for the three send limits. Counts
+        SENT, DELIVERED and BOUNCED: all of them were sent, so all of them consume quota."""
+        ...
+
+    async def set_status(
+        self, message_id: UUID, status: MessageStatus, *, expected_version: int
+    ) -> OutreachMessage:
+        """Transition writer only. Raises `OptimisticLockError` on a stale version."""
+        ...
+
+    async def record_qa(self, message_id: UUID, qa_result: dict[str, Any]) -> None: ...
+
+    async def mark_sent(
+        self, message_id: UUID, *, provider_message_id: str, expected_version: int
+    ) -> OutreachMessage:
+        """Attaches the provider id as part of the SENDING -> SENT transition."""
+        ...
+
+    async def bump_attempts(self, message_id: UUID) -> int: ...
+
+
+class ThreadRepository(Protocol):
+    async def get(self, thread_id: UUID) -> dict[str, Any] | None: ...
+    async def get_or_create_for_sequence(
+        self, sequence_id: UUID, *, subject: str, provider_thread_id: str | None = None
+    ) -> dict[str, Any]: ...
+    async def list_replies(self, thread_id: UUID) -> Sequence[Reply]: ...
+
+
+class ReplyRepository(Protocol):
+    """A reply is a received fact: ingest is idempotent on `provider_message_id`, so
+    re-polling a mailbox cannot duplicate it."""
+
+    async def ingest(
+        self,
+        *,
+        sequence_id: UUID,
+        thread_id: UUID | None,
+        provider_message_id: str,
+        from_normalized: str,
+        received_at: datetime,
+        body_sanitized: str,
+        raw_hash: str,
+    ) -> tuple[Reply, bool]:
+        """Returns (reply, created). `created=False` means this provider message was already
+        ingested and the existing row is returned unchanged."""
+        ...
+
+    async def get(self, reply_id: UUID) -> Reply | None: ...
+    async def list_for_sequence(self, sequence_id: UUID) -> Sequence[Reply]: ...
+
+    async def record_classification(
+        self,
+        *,
+        reply_id: UUID,
+        reply_class: str,
+        confidence: float,
+        next_action: str,
+        deterministic_rule_applied: str | None,
+        return_date: datetime | None = None,
+        agent_run_id: UUID | None = None,
+    ) -> ReplyClassification: ...
+
+    async def latest_classification(self, reply_id: UUID) -> ReplyClassification | None: ...
+
+
+class OpportunityRepository(Protocol):
+    async def get(self, opportunity_id: UUID) -> GuestPostOpportunity | None: ...
+    async def create(
+        self,
+        *,
+        prospect_id: UUID,
+        sequence_id: UUID | None = None,
+        target_url: str | None = None,
+    ) -> GuestPostOpportunity: ...
+
+    async def list(
+        self,
+        *,
+        status: OpportunityStatus | None = None,
+        cursor: str | None = None,
+        limit: int = 50,
+    ) -> Page[GuestPostOpportunity]: ...
+
+    async def set_status(
+        self, opportunity_id: UUID, status: OpportunityStatus, *, expected_version: int
+    ) -> GuestPostOpportunity:
+        """Transition writer only. Raises `OptimisticLockError` on a stale version."""
+        ...
+
+    async def set_terms(
+        self, opportunity_id: UUID, *, agreed_terms: dict[str, Any], requires_approval: bool
+    ) -> GuestPostOpportunity: ...
+
+    async def record_negotiation(
+        self,
+        *,
+        opportunity_id: UUID,
+        draft: str,
+        recommendation: str,
+        risk_level: str,
+        approval_request_id: UUID | None = None,
+        agent_run_id: UUID | None = None,
+    ) -> dict[str, Any]:
+        """Appends the next `round_no` for this opportunity."""
+        ...
+
+    async def record_submission(
+        self,
+        *,
+        opportunity_id: UUID,
+        title: str,
+        content_ref: str,
+        published_url: str | None = None,
+    ) -> dict[str, Any]:
+        """Appends the next `version_no` for this opportunity."""
+        ...
+
+
+class BacklinkRepository(Protocol):
+    """`backlink_verifications` is append-only: every check is a new row, never an update."""
+
+    async def get(self, backlink_id: UUID) -> Backlink | None: ...
+    async def create(
+        self,
+        *,
+        opportunity_id: UUID | None,
+        source_url: str,
+        target_url: str,
+        expected_anchor: str | None = None,
+    ) -> Backlink:
+        """Created in EXPECTED when an opportunity reaches PUBLISHED (docs/13 section 3)."""
+        ...
+
+    async def list(
+        self,
+        *,
+        status: BacklinkStatus | None = None,
+        cursor: str | None = None,
+        limit: int = 50,
+    ) -> Page[Backlink]: ...
+
+    async def set_status(
+        self, backlink_id: UUID, status: BacklinkStatus, *, expected_version: int
+    ) -> Backlink:
+        """Transition writer only. Raises `OptimisticLockError` on a stale version."""
+        ...
+
+    async def record_verification(
+        self,
+        *,
+        backlink_id: UUID,
+        checked_at: datetime,
+        link_found: bool,
+        result: str,
+        verifier_version: str,
+        http_status: int | None = None,
+        final_url: str | None = None,
+        canonical_url: str | None = None,
+        anchor_text: str | None = None,
+        rel_attrs: Sequence[str] = (),
+        context_excerpt: str | None = None,
+    ) -> BacklinkVerification: ...
+
+    async def list_verifications(self, backlink_id: UUID) -> Sequence[BacklinkVerification]: ...
+
+    async def set_miss_counters(
+        self, backlink_id: UUID, *, consecutive_misses: int, seen: bool, checked_at: datetime
+    ) -> None:
+        """Maintains `consecutive_misses` plus first/last seen and last checked. The
+        MISSING -> LOST threshold is a service decision, not a repository one."""
+        ...
+
+
+class ProviderAccountRepository(Protocol):
+    async def get(self, provider_account_id: UUID) -> dict[str, Any] | None: ...
+    async def list_enabled(self, provider_type: str) -> Sequence[dict[str, Any]]:
+        """Enabled accounts of a type. `is_paid` is returned so a caller can refuse a paid
+        account rather than enable one implicitly."""
+        ...
+
+
+# --------------------------------------------------------------------------------------------
 # Unit of work
 # --------------------------------------------------------------------------------------------
 
@@ -491,6 +772,13 @@ class UnitOfWork(Protocol):
     approvals: ApprovalRepository
     settings: SettingsRepository
     agent_runs: AgentRunRepository
+    sequences: SequenceRepository
+    messages: MessageRepository
+    threads: ThreadRepository
+    replies: ReplyRepository
+    opportunities: OpportunityRepository
+    backlinks: BacklinkRepository
+    provider_accounts: ProviderAccountRepository
 
     async def __aenter__(self) -> UnitOfWork: ...
     async def __aexit__(

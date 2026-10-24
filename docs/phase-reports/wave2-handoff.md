@@ -1,6 +1,13 @@
 # Handoff — entering Wave 2
 
-Date 2026-10-23 · branch `foundation/g0-gate` · contracts **0.2.0** · tree clean · no Git remote
+Date 2026-10-23, updated after Wave 2A on 2026-10-25 · branch `foundation/g0-gate`
+contracts **0.3.0** · tree clean · no Git remote
+
+> **Wave 2A is complete** — see `docs/phase-reports/wave2a.md`. What remains for the I2
+> checkpoint is Wave 2B: assemble the job-handler registry and prove draft → mock send →
+> reply → negotiate → publish → verify as one run, plus the Outreach/Reply/Negotiation/
+> Verification agents. The sections below describe the pre-Wave-2A position; the open-items
+> list in `TASK_BOARD.md` and `wave2a.md` supersedes item lists here.
 
 ## Where things stand
 

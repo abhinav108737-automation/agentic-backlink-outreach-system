@@ -1,0 +1,15 @@
+{
+  "trigger": {
+    "sequence_step": 1
+  },
+  "after_seconds": 5400,
+  "reply": {
+    "provider_message_id": "mock-reply-negotiation-binding",
+    "thread_ref": "{thread_ref}",
+    "from_address": "{recipient}",
+    "received_at": "2026-01-06T00:00:00Z",
+    "subject": "Re: Guest contribution idea",
+    "body": "We can publish a sponsored post for $300. Please confirm today and we will lock in the slot.\n\nThe Editor"
+  },
+  "expected_class": "negotiation"
+}

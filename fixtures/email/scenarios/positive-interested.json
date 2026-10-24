@@ -1,0 +1,15 @@
+{
+  "trigger": {
+    "sequence_step": 1
+  },
+  "after_seconds": 3600,
+  "reply": {
+    "provider_message_id": "mock-reply-positive-interested",
+    "thread_ref": "{thread_ref}",
+    "from_address": "{recipient}",
+    "received_at": "2026-01-06T00:00:00Z",
+    "subject": "Re: Guest contribution idea",
+    "body": "Hi,\n\nThanks for reaching out. We would be happy to consider a guest article on healthcare market research. Could you send over a short pitch and a draft outline?\n\nBest,\nThe Editor"
+  },
+  "expected_class": "positive"
+}

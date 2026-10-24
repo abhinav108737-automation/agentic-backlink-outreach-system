@@ -42,7 +42,20 @@ to http(s), no policy override, no direct email send.
 - [x] I1: Discovery → Qualification → Research → Contact → persistence → audit → API readback
 - [x] Three metric states preserved through the gateway; all four missing-metric cases DEFER
 - [x] **Stabilization: architectural inversion removed.** The wiring moved from `kb_core.agentic` to a new leaf package `apps/runtime/` → `kb_runtime`, so `kb_core` no longer depends on `kb_agents`. Two new import-linter contracts (`core does not import the agent layer above it`, `agents do not import the composition root`), `kb_runtime` added to `root_packages`, and 15 AST-based boundary tests in `tests/contract/test_import_boundaries.py` that also see function-level imports, so a deferred import cannot hide a forbidden dependency. The new rule was proven non-vacuous by injecting a violation and watching it break. All 12 agent-driven I1 tests pass unchanged.
-- [ ] **I2 (Wave 2, not started):** draft → mock send → reply → negotiate → publish → verify
+- [x] **Wave 2A COMPLETE 2026-10-25 — contracts `0.3.0`.** Gate `check.sh` **exit 0** (read directly): **1406 pytest** + 22 vitest, strict mypy 180 files, import-linter 5/5, in sync at `0.3.0`, gitleaks clean. See `docs/phase-reports/wave2a.md`.
+  - Lead: outreach repositories added to the seam (**18 → 25**), unblocking both lanes; CCR-003 executed (8 paths added, none removed, 37 → 57 schemas).
+  - Lane B: the five previously unemitted send block codes (`SENDER_INVALID`, `DUPLICATE_STEP`, `DUPLICATE_CONTACT`, `SEND_LIMIT_EXCEEDED`, `UNSUPPORTED_CLAIM`), durable job types + payloads, `SendService` with a six-outcome `begin_send` incl. crash `RECONCILE`, atomic terminal-sequence job cancellation + suppression, I2 endpoints where `sendMessage`/`verifyBacklink` return **202 and enqueue**.
+  - Lane E: evidenced drafts + deterministic QA, `MockEmailProvider` idempotent by key, ordered reply classification (8 rules, opt-out/bounce never overridable), negotiation forcing approval on binding/high-risk, `PUBLISHED → EXPECTED` backlink, simulated verification with `LOST` after 3 misses and **only `VERIFIED` active**.
+- [ ] **I2 checkpoint (Wave 2B, not started):** wire the handler registry end to end and prove draft → mock send → reply → negotiate → publish → verify as one run
+
+### Open items carried out of Wave 2A (decided, not forgotten)
+- **Follow-up delay has no home in `PolicyBody`.** `max_follow_ups` exists but no interval field. Lane E's `outreach.follow_up` handler schedules the next step; the *interval* is still TBD and adding a field needs a CCR. Do not invent one.
+- **`OUTREACH_READY → IN_OUTREACH` is wired** by Lane E's delivery service after SENT. Confirmed present.
+- **Prospect `WON`/`LOST` on opportunity outcome is not wired** — no spec item asked for it.
+- **No Reply or Negotiation agent.** Classification is fully deterministic; `unknown` escalates to a human. The agents are Wave 2B.
+- **Two repository lookups missing**: opportunity-by-sequence and sequences-by-prospect. Both are currently paged over; fine at this scale, worth repository methods later.
+- **Per-domain and per-contact send windows are 24h**, same as `daily_send_limit`. `PolicyBody` specifies no window; 24h is the Lead's confirmed choice (a calendar day would allow a double burst across midnight). One constant, `SEND_WINDOW`.
+- **A campaign cannot send without an enabled email `provider_accounts` row** set as its `sender_provider_account_id`. A fresh database has none, so `SENDER_INVALID` fires by default — intended fail-closed behaviour.
 
 ### Known limitations accepted in Wave 1 (not defects to rediscover)
 - **No Public Suffix List.** Registered-domain extraction uses a hand-maintained multi-label suffix set (`.co.uk`, `.com.au`, `.co.nz`, `.co.in`, `.co.jp`, `.com.br`, `.com.cn`, `.com.sg`, …). Known-wrong cases are pinned in tests: unlisted suffixes (`shop.example.com.ng` → `com.ng`) and private suffixes (`alice.github.io` → `github.io`, which would collapse distinct prospects onto one registered domain). No IDN/punycode normalisation.

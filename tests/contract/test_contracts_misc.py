@@ -15,10 +15,10 @@ from pydantic import ValidationError
 
 
 def test_version():
-    # Bumped once by the bundled CCR-001 + CCR-002 revision (contracts/CHANGELOG.md).
+    # Bumped by CCR-001+CCR-002 (0.2.0) and CCR-003 (0.3.0, Wave 2A outreach endpoints) (contracts/CHANGELOG.md).
     # This pin is deliberate: it fails whenever contracts/** changes without the version
     # moving, which is exactly the Contract Change Request process asserting itself.
-    assert CONTRACT_VERSION == "0.2.0"
+    assert CONTRACT_VERSION == "0.3.0"
 
 
 @pytest.mark.req("FR-27")

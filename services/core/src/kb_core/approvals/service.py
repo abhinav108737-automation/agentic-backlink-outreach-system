@@ -87,32 +87,53 @@ class ApprovalService:
         reason: str | None,
         correlation_id: str,
     ) -> ApprovalRequest:
+        async with self._uow_factory() as uow:
+            return await self.decide_in(
+                uow,
+                approval_id,
+                status=status,
+                decided_by=decided_by,
+                reason=reason,
+                correlation_id=correlation_id,
+            )
+
+    async def decide_in(
+        self,
+        uow: UnitOfWork,
+        approval_id: UUID,
+        *,
+        status: ApprovalStatus,
+        decided_by: Actor,
+        reason: str | None,
+        correlation_id: str,
+    ) -> ApprovalRequest:
+        """Decide inside the caller's unit of work, so a decision and the transition it
+        authorises (for example PENDING_APPROVAL -> APPROVED) commit or roll back together."""
         if status not in _DECIDABLE:
             raise InvalidInput("an approval is decided as APPROVED or REJECTED")
-        async with self._uow_factory() as uow:
-            before = await uow.approvals.get(approval_id)
-            if before is None:
-                raise EntityNotFound("approval", approval_id)
-            try:
-                decided = await uow.approvals.decide(
-                    approval_id,
-                    status=status,
-                    decided_by=f"{decided_by.actor_type.value}:{decided_by.actor_id}",
-                    reason=reason,
-                )
-            except ApprovalAlreadyDecided as exc:
-                raise DomainConflict("APPROVAL_ALREADY_DECIDED", str(exc)) from exc
-            await AuditTrail(uow.audit).record(
-                actor=decided_by,
-                action=f"approval.{status.value.lower()}",
-                subject_type="approval_request",
-                subject_id=approval_id,
-                correlation_id=correlation_id,
-                old_state={"status": before.status.value},
-                new_state={"status": decided.status.value, "kind": decided.kind.value},
+        before = await uow.approvals.get(approval_id)
+        if before is None:
+            raise EntityNotFound("approval", approval_id)
+        try:
+            decided = await uow.approvals.decide(
+                approval_id,
+                status=status,
+                decided_by=f"{decided_by.actor_type.value}:{decided_by.actor_id}",
                 reason=reason,
             )
-            return decided
+        except ApprovalAlreadyDecided as exc:
+            raise DomainConflict("APPROVAL_ALREADY_DECIDED", str(exc)) from exc
+        await AuditTrail(uow.audit).record(
+            actor=decided_by,
+            action=f"approval.{status.value.lower()}",
+            subject_type="approval_request",
+            subject_id=approval_id,
+            correlation_id=correlation_id,
+            old_state={"status": before.status.value},
+            new_state={"status": decided.status.value, "kind": decided.kind.value},
+            reason=reason,
+        )
+        return decided
 
     async def get(self, approval_id: UUID) -> ApprovalRequest:
         async with self._uow_factory() as uow:

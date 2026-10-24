@@ -1,0 +1,17 @@
+{
+  "domain": "publisher-verification-lab.net",
+  "pages": {
+    "/good-article": "good-article.html",
+    "/nofollow-article": "nofollow-article.html",
+    "/anchor-changed": "anchor-changed.html",
+    "/link-removed": "link-removed.html",
+    "/canonical-elsewhere": "canonical-elsewhere.html",
+    "/hidden-link": "hidden-link.html",
+    "/injected-article": "injected-article.html"
+  },
+  "labels": {
+    "backlink_verification": true
+  },
+  "robots_allowed": true,
+  "fetched_at": "2026-01-05T00:00:00Z"
+}

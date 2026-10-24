@@ -1,0 +1,15 @@
+{
+  "trigger": {
+    "sequence_step": 1
+  },
+  "after_seconds": 3600,
+  "reply": {
+    "provider_message_id": "mock-reply-unknown-ambiguous",
+    "thread_ref": "{thread_ref}",
+    "from_address": "{recipient}",
+    "received_at": "2026-01-06T00:00:00Z",
+    "subject": "Re: Guest contribution idea",
+    "body": "Received."
+  },
+  "expected_class": "unknown"
+}

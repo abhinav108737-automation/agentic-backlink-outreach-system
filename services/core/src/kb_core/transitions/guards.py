@@ -12,12 +12,20 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from kb_contracts.domain import Prospect
-from kb_contracts.enums import CampaignStatus, ProspectStatus, QualificationOutcome
+from kb_contracts.domain import OutreachMessage, Prospect
+from kb_contracts.enums import (
+    ApprovalKind,
+    ApprovalStatus,
+    CampaignStatus,
+    MessageStatus,
+    ProspectStatus,
+    QualificationOutcome,
+)
 from kb_contracts.events import Actor
 
 from kb_core.db.protocols import UnitOfWork
 from kb_core.errors import EntityNotFound, GuardFailed, PolicyUnavailable
+from kb_core.policy.claims import unsupported_claims
 from kb_core.qualification.evaluator import evaluate, metrics_to_fetch
 from kb_core.suppression.service import check_suppression
 
@@ -147,6 +155,61 @@ async def campaign_policy_resolvable(ctx: GuardContext) -> None:
         raise GuardFailed("POLICY_UNAVAILABLE", "campaign has no effective policy version")
 
 
+def _message(ctx: GuardContext) -> OutreachMessage:
+    assert isinstance(ctx.entity, OutreachMessage)
+    return ctx.entity
+
+
+async def _message_approval_status(ctx: GuardContext) -> ApprovalStatus | None:
+    latest = await ctx.uow.approvals.latest_for_subject(
+        subject_type="message", subject_id=_message(ctx).id, kind=ApprovalKind.MESSAGE_SEND.value
+    )
+    return latest.status if latest else None
+
+
+async def claims_supported(ctx: GuardContext) -> None:
+    """DRAFT -> QA_PASSED: every factual claim maps to persisted evidence (docs/13 2b)."""
+    message = _message(ctx)
+    seq = await ctx.uow.sequences.get(message.sequence_id)
+    if seq is None:
+        raise EntityNotFound("outreach_sequence", message.sequence_id)
+    bad = await unsupported_claims(ctx.uow, message, seq.prospect_id)
+    if bad:
+        raise GuardFailed(
+            "UNSUPPORTED_CLAIM",
+            f"{len(bad)} claim(s) have no persisted evidence",
+            {"claim_indexes": list(bad)},
+        )
+
+
+async def approval_granted(ctx: GuardContext) -> None:
+    """PENDING_APPROVAL -> APPROVED needs an APPROVED message_send approval."""
+    if await _message_approval_status(ctx) is not ApprovalStatus.APPROVED:
+        raise GuardFailed("APPROVAL_REQUIRED", "no APPROVED message_send approval on record")
+
+
+async def approval_rejected(ctx: GuardContext) -> None:
+    """PENDING_APPROVAL -> REJECTED needs a REJECTED message_send approval."""
+    if await _message_approval_status(ctx) is not ApprovalStatus.REJECTED:
+        raise GuardFailed("APPROVAL_NOT_REJECTED", "no REJECTED message_send approval on record")
+
+
+async def approval_not_required(ctx: GuardContext) -> None:
+    """QA_PASSED -> APPROVED skips the queue only when the policy does not require approval
+    for sends, or the approval is already granted."""
+    message = _message(ctx)
+    seq = await ctx.uow.sequences.get(message.sequence_id)
+    if seq is None:
+        raise EntityNotFound("outreach_sequence", message.sequence_id)
+    version = await ctx.uow.policies.active_version_for_campaign(seq.campaign_id)
+    if version is None:
+        raise PolicyUnavailable(f"no effective policy for campaign {seq.campaign_id}")
+    if version.body.require_approval_for_send and (
+        await _message_approval_status(ctx) is not ApprovalStatus.APPROVED
+    ):
+        raise GuardFailed("APPROVAL_REQUIRED", "policy requires an operator approval for sends")
+
+
 def default_guards() -> dict[GuardKey, tuple[Guard, ...]]:
     g: dict[GuardKey, tuple[Guard, ...]] = {}
 
@@ -170,6 +233,11 @@ def default_guards() -> dict[GuardKey, tuple[Guard, ...]]:
     add("prospect", P.REJECTED.value, P.DISCOVERED.value, new_policy_version_required)
     add("prospect", P.LOST.value, P.ELIGIBLE.value, recontact_cooldown_undefined)
     add("prospect", None, P.SUPPRESSED.value, suppression_matches)
+    M = MessageStatus
+    add("outreach_message", M.DRAFT.value, M.QA_PASSED.value, claims_supported)
+    add("outreach_message", M.PENDING_APPROVAL.value, M.APPROVED.value, approval_granted)
+    add("outreach_message", M.PENDING_APPROVAL.value, M.REJECTED.value, approval_rejected)
+    add("outreach_message", M.QA_PASSED.value, M.APPROVED.value, approval_not_required)
     for src_c in (CampaignStatus.DRAFT, CampaignStatus.PAUSED):
         add("campaign", src_c.value, CampaignStatus.ACTIVE.value, campaign_policy_resolvable)
     return g

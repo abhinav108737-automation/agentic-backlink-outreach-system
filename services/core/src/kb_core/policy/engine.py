@@ -22,24 +22,46 @@ Block codes this engine emits, and their exact triggers:
                          approval; or real sending enabled without an APPROVED
                          live_send_activation for the campaign.
 
-Other BlockCodes in the frozen enum (UNSUPPORTED_CLAIM, DUPLICATE_*, SEND_LIMIT_EXCEEDED, ...)
-belong to the outreach lane and are intentionally not emitted here.
+Message-level send gates (send/enqueue_send with subject_type "message" and a persisted message;
+a message that does not exist adds none of the message-derived codes, because every caller loads
+the message first and answers 404):
+
+  SENDER_INVALID         the campaign has no sender_provider_account_id, or the account is
+                         missing, disabled, not an email provider, or paid without being enabled.
+                         Fires on a fresh database (no enabled email account) by design.
+  DUPLICATE_STEP         another message of the same sequence and step is live (not terminal), or
+                         one already left the system (SENT/DELIVERED/BOUNCED), or this message
+                         itself already left. Agrees with `one_live_message_per_step`.
+  DUPLICATE_CONTACT      a live message from a DIFFERENT sequence already targets the same
+                         contact channel in this campaign (follow-ups in one sequence are fine).
+  SEND_LIMIT_EXCEEDED    in the trailing 24h, sent count >= daily_send_limit (campaign),
+                         per_domain_send_limit (prospect domain) or per_contact_send_limit
+                         (contact channel). A limit of 0 blocks everything.
+  UNSUPPORTED_CLAIM      a claim cites no evidence, an evidence id that is not persisted, or
+                         evidence of another prospect.
+
+The message's own contact channel feeds the SUPPRESSED check, so a suppression added after
+approval stops the send even though the request context never named the address.
 """
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 from uuid import UUID
 
 from kb_contracts.config import Settings
-from kb_contracts.domain import Campaign, PolicyVersion
-from kb_contracts.enums import ApprovalKind, ApprovalStatus, CampaignStatus
+from kb_contracts.domain import Campaign, OutreachMessage, OutreachSequence, PolicyVersion
+from kb_contracts.enums import ApprovalKind, ApprovalStatus, CampaignStatus, MessageStatus
 from kb_contracts.policy import BlockCode, PolicyCheckRequest, PolicyDecision
+from kb_contracts.providers import Clock
 
 from kb_core.audit.service import SYSTEM_POLICY, AuditTrail
 from kb_core.db.protocols import UnitOfWork, UnitOfWorkFactory
 from kb_core.errors import EntityNotFound, InvalidInput, PolicyUnavailable
+from kb_core.policy.claims import unsupported_claims
 from kb_core.qualification.evaluator import evaluate, metrics_to_fetch
+from kb_core.scheduling.clock import SystemClock
 from kb_core.settings.service import read_kill_switch
 from kb_core.suppression.service import check_suppression
 
@@ -47,12 +69,47 @@ OUTBOUND_ACTIONS = frozenset({"enqueue_send", "send", "follow_up"})
 SEND_ACTIONS = frozenset({"enqueue_send", "send"})
 ELIGIBILITY_ACTIONS = frozenset({"qualify"}) | OUTBOUND_ACTIONS
 COMMIT_ACTIONS = frozenset({"negotiation_commit"})
+EMAIL_PROVIDER_TYPES = frozenset({"email"})
+SEND_WINDOW = timedelta(hours=24)
+_WENT_OUT = frozenset({MessageStatus.SENT, MessageStatus.DELIVERED, MessageStatus.BOUNCED})
+_DEAD_END = frozenset(
+    {
+        MessageStatus.FAILED,
+        MessageStatus.REJECTED,
+        MessageStatus.CANCELLED,
+        MessageStatus.POLICY_BLOCKED,
+    }
+)
+
+
+class _MessageContext:
+    """The persisted facts a send gate needs, resolved once per check."""
+
+    def __init__(
+        self,
+        message: OutreachMessage,
+        sequence: OutreachSequence,
+        domain_id: UUID,
+        domain: str | None,
+        email: str | None,
+        contact_id: UUID | None,
+    ) -> None:
+        self.message, self.sequence = message, sequence
+        self.domain_id, self.domain, self.email, self.contact_id = (
+            domain_id,
+            domain,
+            email,
+            contact_id,
+        )
 
 
 class DeterministicPolicyEngine:
-    def __init__(self, uow_factory: UnitOfWorkFactory, settings: Settings) -> None:
+    def __init__(
+        self, uow_factory: UnitOfWorkFactory, settings: Settings, clock: Clock | None = None
+    ) -> None:
         self._uow_factory = uow_factory
         self._settings = settings
+        self._clock: Clock = clock or SystemClock()
 
     async def check(self, request: PolicyCheckRequest) -> PolicyDecision:
         async with self._uow_factory() as uow:
@@ -93,11 +150,15 @@ class DeterministicPolicyEngine:
             detail["campaign_status"] = campaign.status.value
 
         prospect_domain_id = await self._prospect_domain_id(uow, request)
-        if await self._is_suppressed(uow, request, prospect_domain_id, detail):
+        mctx = await self._message_context(uow, request) if request.action in SEND_ACTIONS else None
+        if await self._is_suppressed(uow, request, prospect_domain_id, detail, mctx):
             codes.append(BlockCode.SUPPRESSED)
 
         if request.action in SEND_ACTIONS:
             await self._send_gates(uow, request, version, codes, detail)
+            await self._sender_gate(uow, campaign, codes, detail)
+            if mctx is not None:
+                await self._message_gates(uow, request, version, mctx, codes, detail)
         elif request.action in COMMIT_ACTIONS:
             await self._commitment_gate(uow, request, version, codes)
 
@@ -143,19 +204,23 @@ class DeterministicPolicyEngine:
 
     @staticmethod
     async def _is_suppressed(
-        uow: UnitOfWork, request: PolicyCheckRequest, domain_id: UUID | None, detail: dict[str, Any]
+        uow: UnitOfWork,
+        request: PolicyCheckRequest,
+        domain_id: UUID | None,
+        detail: dict[str, Any],
+        mctx: _MessageContext | None = None,
     ) -> bool:
         ctx = request.context
-        domain = ctx.get("domain")
+        domain = ctx.get("domain") or (mctx.domain if mctx else None)
         if domain is None and domain_id is not None:
             row = await uow.domains.get(domain_id)
             domain = row.registered_domain if row else None
         result = await check_suppression(
             uow,
             campaign_id=request.campaign_id,
-            email=ctx.get("email"),
+            email=ctx.get("email") or (mctx.email if mctx else None),
             domain=domain,
-            contact_id=ctx.get("contact_id"),
+            contact_id=ctx.get("contact_id") or (mctx.contact_id if mctx else None),
         )
         if result.suppressed:
             detail["suppressed_scopes"] = list(result.scopes)
@@ -183,6 +248,112 @@ class DeterministicPolicyEngine:
         ):
             codes.append(BlockCode.APPROVAL_REQUIRED)
             detail.setdefault("approval_kind", ApprovalKind.MESSAGE_SEND.value)
+
+    @staticmethod
+    async def _message_context(
+        uow: UnitOfWork, request: PolicyCheckRequest
+    ) -> _MessageContext | None:
+        if request.subject_type != "message":
+            return None
+        message = await uow.messages.get(request.subject_id)
+        if message is None:
+            return None
+        sequence = await uow.sequences.get(message.sequence_id)
+        if sequence is None:
+            raise EntityNotFound("outreach_sequence", message.sequence_id)
+        if sequence.campaign_id != request.campaign_id:
+            raise InvalidInput("message does not belong to the requested campaign")
+        prospect = await uow.prospects.get(sequence.prospect_id)
+        if prospect is None:
+            raise EntityNotFound("prospect", sequence.prospect_id)
+        domain = await uow.domains.get(prospect.domain_id)
+        channel = next(
+            (
+                c
+                for c in await uow.contacts.list_channels(prospect.domain_id)
+                if c.id == sequence.contact_channel_id
+            ),
+            None,
+        )
+        return _MessageContext(
+            message,
+            sequence,
+            prospect.domain_id,
+            domain.registered_domain if domain else None,
+            channel.value_normalized if channel and channel.channel_type == "email" else None,
+            channel.contact_id if channel else None,
+        )
+
+    @staticmethod
+    async def _sender_gate(
+        uow: UnitOfWork, campaign: Campaign, codes: list[BlockCode], detail: dict[str, Any]
+    ) -> None:
+        """Fail closed: the campaign's own sender account must exist, be enabled and be email."""
+        account_id = campaign.sender_provider_account_id
+        account = await uow.provider_accounts.get(account_id) if account_id else None
+        reason: str | None = None
+        if account_id is None:
+            reason = "no_sender_configured"
+        elif account is None:
+            reason = "sender_account_missing"
+        elif not account["enabled"]:
+            reason = "sender_account_disabled"
+        elif str(account["provider_type"]).lower() not in EMAIL_PROVIDER_TYPES:
+            reason = "sender_account_not_email"
+        if reason is not None:
+            codes.append(BlockCode.SENDER_INVALID)
+            detail["sender_invalid"] = reason
+
+    async def _message_gates(
+        self,
+        uow: UnitOfWork,
+        request: PolicyCheckRequest,
+        version: PolicyVersion,
+        mctx: _MessageContext,
+        codes: list[BlockCode],
+        detail: dict[str, Any],
+    ) -> None:
+        msg, seq = mctx.message, mctx.sequence
+
+        siblings = [m for m in await uow.messages.list_for_sequence(seq.id) if m.id != msg.id]
+        same_step = [m for m in siblings if m.step_no == msg.step_no]
+        occupied = any(m.status not in _DEAD_END for m in same_step)  # live or already out
+        if occupied or msg.status in _WENT_OUT:
+            codes.append(BlockCode.DUPLICATE_STEP)
+            detail["duplicate_step"] = msg.step_no
+
+        others = [
+            m
+            for m in await uow.messages.live_for_channel(seq.campaign_id, seq.contact_channel_id)
+            if m.sequence_id != seq.id
+        ]
+        if others:
+            codes.append(BlockCode.DUPLICATE_CONTACT)
+            detail["duplicate_contact_messages"] = len(others)
+
+        since = self._clock.now() - SEND_WINDOW
+        body = version.body
+        exceeded: list[str] = []
+        if await uow.messages.count_sent_since(since=since, campaign_id=seq.campaign_id) >= (
+            body.daily_send_limit
+        ):
+            exceeded.append("daily")
+        if await uow.messages.count_sent_since(since=since, domain_id=mctx.domain_id) >= (
+            body.per_domain_send_limit
+        ):
+            exceeded.append("per_domain")
+        if await uow.messages.count_sent_since(
+            since=since, contact_channel_id=seq.contact_channel_id
+        ) >= (body.per_contact_send_limit):
+            exceeded.append("per_contact")
+        if exceeded:
+            codes.append(BlockCode.SEND_LIMIT_EXCEEDED)
+            detail["limits_exceeded"] = exceeded
+
+        bad = await unsupported_claims(uow, msg, seq.prospect_id)
+        if bad:
+            codes.append(BlockCode.UNSUPPORTED_CLAIM)
+            detail["unsupported_claim_indexes"] = list(bad)
 
     async def _commitment_gate(
         self,

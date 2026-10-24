@@ -1,0 +1,20 @@
+{
+  "thread_ref": "thread-positive-single-reply",
+  "messages": [
+    {
+      "idempotency_key": "thread-pos-1-out",
+      "to": "editor@editorial-desk.example.test",
+      "subject": "Guest contribution idea",
+      "body": "Hello, we would like to propose a guest article.",
+      "thread_ref": "thread-positive-single-reply"
+    },
+    {
+      "provider_message_id": "thread-pos-1-in",
+      "thread_ref": "thread-positive-single-reply",
+      "from_address": "editor@editorial-desk.example.test",
+      "received_at": "2026-01-06T09:00:00Z",
+      "subject": "Re: Guest contribution idea",
+      "body": "Happy to consider this. Please send a pitch."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "trigger": {
+    "sequence_step": 1
+  },
+  "after_seconds": 1800,
+  "reply": {
+    "provider_message_id": "mock-reply-opt-out-remove",
+    "thread_ref": "{thread_ref}",
+    "from_address": "{recipient}",
+    "received_at": "2026-01-06T00:00:00Z",
+    "subject": "Re: Guest contribution idea",
+    "body": "Please remove me from your list and do not contact us again."
+  },
+  "expected_class": "opt_out"
+}
