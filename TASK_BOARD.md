@@ -82,6 +82,21 @@ to http(s), no policy override, no direct email send.
 - **No seeded kill-switch row**; absent means off. A malformed row counts as active (fail closed).
 - **`policies/**` is empty** — policy YAML is a backlog item, not used.
 
+## Epic 8 Digital PR / Earned Media channel (PROPOSED — planning only, nothing implemented)
+Architecture proposal complete 2026-10-25; **no code, no contract change, no migration**. Contracts
+remain frozen at `0.4.0`. Sequenced strictly **after I2** so Wave 2B is not disturbed.
+Plan: `docs/15_DIGITAL_PR_EXTENSION.md` · ADR-0021 (**Proposed**) · CCR-005 (**Proposed, not
+approved**) · provenance: `docs/12_REPOSITORY_RESEARCH.md`.
+- [x] Reference evaluated at pinned SHA `3ef97c52`, **license unverifiable** (`license: null`, no license file in the complete tree) ⇒ idea-level study only, **nothing copied**
+- [x] Capability gap analysis, component/responsibility matrix, architecture + data model delta, provider contracts, FR-33…FR-45 / SEC-09…SEC-10 / NFR-13, risk + license assessment, 16 mock E2E acceptance criteria, post-I2 integration plan, authorised-access preconditions
+- [ ] **Decision needed:** accept or reject ADR-0021 and CCR-005. Nothing proceeds without it
+- [ ] D1 contracts + migration `0002` (7 additive tables, 2 nullable `backlinks` columns)
+- [ ] D2 providers (mock + ManualImport) + opportunity/ranking/expert-profile services; research asset + pitch services with sourcing gates
+- [ ] D3 job handlers in the typed registry, capabilities in `kb_runtime`, Media Research + Pitch agents (deterministic authority preserved)
+- [ ] D4 the 16 acceptance criteria; checkpoint **I3-PR**
+- [ ] D5 channel-split reporting + pitch-outcome learning (only after the Wave 3 foundation exists)
+- [ ] **Blocked until authorised:** any real Qwoted adapter. Preconditions in docs/15 §10. ManualImport is the only lawful path meanwhile
+
 ## Epic 1 Campaign/Data
 - [ ] campaign schema/API/UI
 - [ ] prospect schema/API/UI

@@ -25,3 +25,4 @@ Material architecture changes require a new ADR (CLAUDE.md). ADRs 0001–0020 we
 | [0018](0018-secrets-management.md) | Secrets management and redaction | Accepted |
 | [0019](0019-cross-platform-packaging.md) | Cross-platform packaging, macOS first | Proposed |
 | [0020](0020-untrusted-content-prompt-injection.md) | Untrusted content and prompt-injection posture | Accepted |
+| [0021](0021-digital-pr-earned-media-channel.md) | Digital PR / Earned Media as a second acquisition channel | **Proposed** |
