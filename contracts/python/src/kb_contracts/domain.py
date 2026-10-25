@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from kb_contracts.enums import (
     ApprovalKind,
@@ -59,6 +60,34 @@ class PolicyBody(DTO):
     max_follow_ups: int = Field(default=2, ge=0)
     require_approval_for_send: bool = True
     require_approval_for_commitments: bool = True
+
+    # CCR-004. Days after the previous *successful* send before each follow-up step: element 0
+    # is the delay after the initial send, element 1 after the first follow-up.
+    follow_up_delays_days: tuple[int, ...] = (4, 7)
+    # The rolling window for the three send limits. This was a module constant in Wave 2A (a
+    # Lead default, never an approved business rule); CCR-004 makes it visible and versioned.
+    send_window_hours: int = Field(default=24, ge=1)
+    # IANA name. The sending window below is interpreted in this zone, not UTC.
+    timezone: str = "UTC"
+    sending_window_start_hour: int = Field(default=0, ge=0, le=24)
+    sending_window_end_hour: int = Field(default=24, ge=0, le=24)
+
+    @model_validator(mode="after")
+    def _schedule_is_coherent(self) -> PolicyBody:
+        if any(d <= 0 for d in self.follow_up_delays_days):
+            raise ValueError("follow_up_delays_days must all be positive")
+        if len(self.follow_up_delays_days) < self.max_follow_ups:
+            raise ValueError(
+                f"max_follow_ups={self.max_follow_ups} needs at least that many "
+                f"follow_up_delays_days; got {len(self.follow_up_delays_days)}"
+            )
+        if self.sending_window_start_hour >= self.sending_window_end_hour:
+            raise ValueError("sending_window_start_hour must be < sending_window_end_hour")
+        try:
+            ZoneInfo(self.timezone)
+        except Exception as exc:  # noqa: BLE001 - any zoneinfo failure is a bad timezone
+            raise ValueError(f"unknown timezone: {self.timezone!r}") from exc
+        return self
 
 
 class PolicyVersion(Entity):

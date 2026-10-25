@@ -27,6 +27,9 @@ class FakeWorld:
         self.memory: list[dict[str, Any]] = []
         self.evidence: list[dict[str, Any]] = []
         self.recorded: list[tuple[str, dict[str, Any]]] = []
+        self.threads: dict[str, dict[str, Any]] = {}
+        self.classifications: list[dict[str, Any]] = []
+        self.negotiation_plans: list[dict[str, Any]] = []
         self.search_provider = "fake-search"
         self.fail_tools: dict[str, Exception] = {}
 
@@ -82,6 +85,30 @@ class FakeWorld:
             self.recorded.append(("record_evidence", args.model_dump(mode="json")))
             return {"refs": refs}
 
+        async def read_thread(ctx: ToolContext, args: Any) -> Mapping[str, Any]:
+            """Shape: ``ThreadView`` (thread_ref, opportunity_id, domain, messages oldest first)."""
+            self._maybe_fail("read_thread")
+            thread = self.threads.get(args.thread_ref)
+            if thread is None:
+                raise ProviderUnavailable(f"no fake thread {args.thread_ref}")
+            return {"thread_ref": args.thread_ref, **thread}
+
+        async def record_classification(ctx: ToolContext, args: Any) -> Mapping[str, Any]:
+            """Persists an ADVISORY interpretation; it never changes the stored reply class."""
+            self._maybe_fail("record_classification")
+            payload = args.model_dump(mode="json")
+            self.classifications.append(payload)
+            self.recorded.append(("record_classification", payload))
+            return {"record_id": uuid4()}
+
+        async def record_negotiation_plan(ctx: ToolContext, args: Any) -> Mapping[str, Any]:
+            """Stores a PROPOSAL; commitment gating and approvals are deterministic, downstream."""
+            self._maybe_fail("record_negotiation_plan")
+            payload = args.model_dump(mode="json")
+            self.negotiation_plans.append(payload)
+            self.recorded.append(("record_negotiation_plan", payload))
+            return {"record_id": uuid4()}
+
         def recorder(tool: str) -> Callable[[ToolContext, Any], Any]:
             async def record(ctx: ToolContext, args: Any) -> Mapping[str, Any]:
                 self._maybe_fail(tool)
@@ -99,6 +126,9 @@ class FakeWorld:
             "read_domain_metrics": read_domain_metrics,
             "read_evidence": read_evidence,
             "record_evidence": record_evidence,
+            "read_thread": read_thread,
+            "record_classification": record_classification,
+            "record_negotiation_plan": record_negotiation_plan,
         }
         for tool in (
             "record_candidates",
@@ -106,8 +136,6 @@ class FakeWorld:
             "record_dossier",
             "record_contact_candidates",
             "record_draft",
-            "record_classification",
-            "record_negotiation_plan",
             "record_verification_assessment",
             "record_narrative",
             "request_send",

@@ -15,6 +15,12 @@ POLICY_BLOCKED (terminal; a new version is drafted instead). Anything else is TR
 switch, pause, send limit, sender, approval, real-send flag): the message keeps its state, the
 caller gets the codes, and a later attempt re-evaluates.
 
+Immediately before dispatch (CCR-004) `begin_send` re-evaluates, from fresh state in one unit of
+work: message identity by idempotency key; the full policy gate (kill switch, campaign pause,
+suppression, approval, sender eligibility, duplicates, the three send limits over
+`send_window_hours`, claims, real-send switch); and finally the sending window. Outside the window
+the outcome is DEFERRED with `not_before` set to the next in-window instant, never a block.
+
 Crash safety. `begin_send` never re-enters SENDING: a message already SENDING is reported as
 RECONCILE and the handler must look the idempotency key up at the provider before any resend.
 """
@@ -22,6 +28,7 @@ RECONCILE and the handler must look the idempotency key up at the provider befor
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
@@ -39,6 +46,7 @@ from kb_contracts.providers import Clock
 from kb_contracts.state_machines import OUTREACH_MESSAGE
 
 from kb_core.approvals.service import ApprovalService
+from kb_core.audit.service import AuditTrail
 from kb_core.db.protocols import UnitOfWork, UnitOfWorkFactory
 from kb_core.errors import (
     EntityNotFound,
@@ -51,6 +59,7 @@ from kb_core.idempotency.service import IdempotencyService, request_hash
 from kb_core.policy.engine import DeterministicPolicyEngine
 from kb_core.scheduling.jobs import SEQUENCE_SUBJECT, SendPayload, enqueue_send
 from kb_core.scheduling.queue import InUowQueue
+from kb_core.scheduling.window import SendingWindow
 from kb_core.transitions.service import TransitionService
 
 SYSTEM_SEND = Actor(actor_type=ActorType.SYSTEM, actor_id="send_service")
@@ -96,6 +105,8 @@ class BeginSend:
     message: OutreachMessage
     decision: PolicyDecision | None = None
     attempt: int = 0
+    # Set only on a DEFERRED caused by the sending window: the earliest in-window instant (UTC).
+    not_before: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -321,10 +332,13 @@ class SendService:
                 actor=actor, reason="send requested", correlation_id=correlation_id,
             )  # fmt: skip
             message = _msg(res.entity)
+        version = await uow.policies.active_version_for_campaign(seq.campaign_id)
+        if version is None:
+            raise PolicyUnavailable(f"no effective policy for campaign {seq.campaign_id}")
         job_id = await enqueue_send(
             InUowQueue(uow),
             SendPayload(message_id=message.id, sequence_id=seq.id, correlation_id=correlation_id),
-            self._clock.now(),
+            SendingWindow.from_policy(version.body).next_open(self._clock.now()),
         )
         return UUID(job_id), message
 
@@ -356,6 +370,10 @@ class SendService:
                 return BeginSend(BeginOutcome.ALREADY_SENT, message)
             if message.status is MessageStatus.SENDING:
                 return BeginSend(BeginOutcome.RECONCILE, message)
+            keyed = await uow.messages.get_by_idempotency_key(message.idempotency_key)
+            if keyed is not None and keyed.id != message.id:
+                # The key belongs to another message: never dispatch under someone else's key.
+                return BeginSend(BeginOutcome.NOT_SENDABLE, message)
             if (
                 message.status not in (MessageStatus.QUEUED, MessageStatus.RETRY_WAIT)
                 or seq.status in _SEQUENCE_TERMINAL
@@ -375,6 +393,28 @@ class SendService:
                 if await self._apply_block(uow, message, decision, SYSTEM_SEND, correlation_id):
                     return BeginSend(BeginOutcome.BLOCKED, message, decision)
                 return BeginSend(BeginOutcome.DEFERRED, message, decision)
+
+            version = await uow.policies.active_version_for_campaign(seq.campaign_id)
+            if version is None:  # pragma: no cover - the policy check above already needed it
+                raise PolicyUnavailable(f"no effective policy for campaign {seq.campaign_id}")
+            now = self._clock.now()
+            window = SendingWindow.from_policy(version.body)
+            if not window.contains(now):
+                opens = window.next_open(now)
+                await AuditTrail(uow.audit).record(
+                    actor=SYSTEM_SEND,
+                    action="send.deferred_outside_window",
+                    subject_type="message",
+                    subject_id=message.id,
+                    correlation_id=correlation_id,
+                    new_state={
+                        "not_before": opens.isoformat(),
+                        "timezone": window.timezone,
+                        "window": [window.start_hour, window.end_hour],
+                    },
+                    policy_version_id=version.id,
+                )
+                return BeginSend(BeginOutcome.DEFERRED, message, decision, not_before=opens)
 
             attempt = await uow.messages.bump_attempts(message.id)
             res = await self._transitions.transition_in(

@@ -19,7 +19,7 @@ from typing import Any
 from uuid import UUID
 
 from kb_agents.tools.gateway import Capability, ToolContext
-from kb_contracts.enums import ActorType, ProspectStatus
+from kb_contracts.enums import ActorType, MessageStatus, ProspectStatus
 from kb_contracts.events import Actor
 from kb_contracts.providers import CrawlerProvider, SearchProvider, SEOMetricsProvider
 from kb_core.db.protocols import UnitOfWork, UnitOfWorkFactory
@@ -33,6 +33,18 @@ AGENT_ACTOR = Actor(actor_type=ActorType.AGENT, actor_id="agent")
 # scheme is allowlisted here and the provider itself is a fixture-backed mock at I1.
 _ALLOWED_SCHEMES = frozenset({"http", "https"})
 
+# A message the recipient could actually have seen. Drafts and blocked versions are not
+# part of the conversation an agent reasons about.
+_LEFT_THE_SYSTEM = frozenset({MessageStatus.SENT, MessageStatus.DELIVERED, MessageStatus.BOUNCED})
+
+
+def _is_uuid(value: str) -> bool:
+    try:
+        UUID(value)
+    except ValueError:
+        return False
+    return True
+
 
 @dataclass(frozen=True)
 class CapabilityDeps:
@@ -41,6 +53,9 @@ class CapabilityDeps:
     crawler: CrawlerProvider
     seo_metrics: SEOMetricsProvider
     transitions: TransitionService
+    # Wave 2B: only needed by `record_negotiation_plan`; None leaves that tool unwired,
+    # and the gateway then answers `capability_not_wired` rather than improvising.
+    negotiation: Any | None = None
 
 
 def _actor(ctx: ToolContext) -> Actor:
@@ -328,6 +343,114 @@ def build_capabilities(deps: CapabilityDeps) -> dict[str, Capability]:  # noqa: 
                 )
         return {"record_id": contact.id if contact is not None else None}
 
+    # ------------------------------------------------------------- outreach reads (Wave 2B)
+
+    async def read_thread(ctx: ToolContext, args: Any) -> Mapping[str, Any]:
+        """A thread as the Reply and Negotiation agents see it: oldest message first, bodies
+        already sanitised. Every body is UNTRUSTED data (ADR-0020); the agents strip
+        instruction-like spans before any model sees them."""
+        try:
+            thread_id = UUID(args.thread_ref)
+        except ValueError as exc:
+            raise InvalidInput(f"thread_ref is not a thread id: {args.thread_ref!r}") from exc
+        async with deps.uow_factory() as uow:
+            thread = await uow.threads.get(thread_id)
+            if thread is None:
+                raise EntityNotFound("outreach_thread", thread_id)
+            sequence_id = thread["sequence_id"]
+            sequence = await uow.sequences.get(sequence_id)
+            sent = await uow.messages.list_for_sequence(sequence_id)
+            replies = await uow.threads.list_replies(thread_id)
+            domain = ""
+            opportunity_id: UUID | None = None
+            if sequence is not None:
+                prospect = await uow.prospects.get(sequence.prospect_id)
+                if prospect is not None:
+                    row = await uow.domains.get(prospect.domain_id)
+                    domain = row.registered_domain if row else ""
+                page = await uow.opportunities.list(limit=200)
+                opportunity_id = next(
+                    (o.id for o in page.items if o.sequence_id == sequence_id), None
+                )
+        messages = [
+            {
+                "message_id": str(m.id),
+                "direction": "outbound",
+                "subject": m.subject,
+                "body": m.body,
+                "occurred_at": m.updated_at,
+            }
+            for m in sent
+            if m.status in _LEFT_THE_SYSTEM
+        ]
+        messages += [
+            {
+                "message_id": str(r.id),
+                "direction": "inbound",
+                "subject": "",
+                "body": r.body_sanitized,
+                "occurred_at": r.received_at,
+            }
+            for r in replies
+        ]
+        messages.sort(key=lambda m: (m["occurred_at"] is None, m["occurred_at"]))
+        return {
+            "thread_ref": args.thread_ref,
+            "opportunity_id": opportunity_id,
+            "domain": domain,
+            "messages": tuple(messages[:200]),
+        }
+
+    # ------------------------------------------------------- outreach records (Wave 2B)
+
+    async def record_classification(ctx: ToolContext, args: Any) -> Mapping[str, Any]:
+        """The agent's interpretation, recorded as ADVISORY.
+
+        The deterministic classifier owns the class. This capability audits the agent's view and
+        deliberately does NOT write `reply_classifications`: doing so would let an agent restate
+        the class as though it had decided it. The agent already cannot return a class that
+        differs from the deterministic one, so this is the second of two independent guards.
+        """
+        result = args.result
+        async with deps.uow_factory() as uow:
+            event_id = await uow.audit.append(
+                actor_type=_actor(ctx).actor_type.value,
+                actor_id=_actor(ctx).actor_id,
+                action="reply.interpreted",
+                subject_type="outreach_thread",
+                subject_id=UUID(args.thread_ref) if _is_uuid(args.thread_ref) else None,
+                correlation_id=_cid(ctx),
+                new_state={
+                    "reply_class": result.reply_class.value,
+                    "next_action": result.next_action,
+                    "confidence": result.confidence,
+                    "advisory": True,
+                },
+                reason="reply agent interpretation (advisory; rules own the class)",
+                agent_run_id=ctx.agent_run_id,
+            )
+        return {"record_id": event_id, "duplicate": False}
+
+    async def record_negotiation_plan(ctx: ToolContext, args: Any) -> Mapping[str, Any]:
+        """Hand the plan to `NegotiationService.plan_round`, which re-runs `needs_human`.
+
+        The agent may raise `makes_binding_commitment` but never lower it, and reaching AGREED
+        still requires an APPROVED approval row. So an agent cannot talk its way into a
+        commitment here.
+        """
+        if deps.negotiation is None:
+            raise InvalidInput("negotiation service is not wired")
+        outcome = await deps.negotiation.plan_round(
+            args.plan,
+            correlation_id=_cid(ctx),
+            idempotency_key=ctx.idempotency_key,
+            agent_run_id=ctx.agent_run_id,
+        )
+        return {
+            "record_id": getattr(outcome, "round_id", None) if outcome else None,
+            "duplicate": outcome is None,
+        }
+
     return {
         "read_campaign_state": read_campaign_state,
         "read_policy": read_policy,
@@ -341,6 +464,9 @@ def build_capabilities(deps: CapabilityDeps) -> dict[str, Capability]:  # noqa: 
         "record_evidence": record_evidence,
         "record_dossier": record_dossier,
         "record_contact_candidates": record_contact_candidates,
+        "read_thread": read_thread,
+        "record_classification": record_classification,
+        "record_negotiation_plan": record_negotiation_plan,
     }
 
 

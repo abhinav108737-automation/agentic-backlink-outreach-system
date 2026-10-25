@@ -34,7 +34,8 @@ the message first and answers 404):
                          itself already left. Agrees with `one_live_message_per_step`.
   DUPLICATE_CONTACT      a live message from a DIFFERENT sequence already targets the same
                          contact channel in this campaign (follow-ups in one sequence are fine).
-  SEND_LIMIT_EXCEEDED    in the trailing 24h, sent count >= daily_send_limit (campaign),
+  SEND_LIMIT_EXCEEDED    in the trailing `PolicyBody.send_window_hours` (default 24; read from
+                         the policy, not a constant), sent count >= daily_send_limit (campaign),
                          per_domain_send_limit (prospect domain) or per_contact_send_limit
                          (contact channel). A limit of 0 blocks everything.
   UNSUPPORTED_CLAIM      a claim cites no evidence, an evidence id that is not persisted, or
@@ -70,7 +71,6 @@ SEND_ACTIONS = frozenset({"enqueue_send", "send"})
 ELIGIBILITY_ACTIONS = frozenset({"qualify"}) | OUTBOUND_ACTIONS
 COMMIT_ACTIONS = frozenset({"negotiation_commit"})
 EMAIL_PROVIDER_TYPES = frozenset({"email"})
-SEND_WINDOW = timedelta(hours=24)
 _WENT_OUT = frozenset({MessageStatus.SENT, MessageStatus.DELIVERED, MessageStatus.BOUNCED})
 _DEAD_END = frozenset(
     {
@@ -331,8 +331,8 @@ class DeterministicPolicyEngine:
             codes.append(BlockCode.DUPLICATE_CONTACT)
             detail["duplicate_contact_messages"] = len(others)
 
-        since = self._clock.now() - SEND_WINDOW
         body = version.body
+        since = self._clock.now() - timedelta(hours=body.send_window_hours)
         exceeded: list[str] = []
         if await uow.messages.count_sent_since(since=since, campaign_id=seq.campaign_id) >= (
             body.daily_send_limit

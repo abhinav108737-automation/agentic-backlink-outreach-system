@@ -10,8 +10,8 @@ ever coerced to zero.
 
 from __future__ import annotations
 
-from datetime import date
-from typing import Annotated, Any
+from datetime import date, datetime
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from kb_contracts.agents import (
@@ -184,7 +184,7 @@ class RecordNarrativeArgs(ToolModel):
 
 
 # ---------------------------------------------------------------------------- results
-# Result models are defined for the tools the four Wave-1 agents consume. The gateway
+# Result models are defined for the tools the specialist agents consume. The gateway
 # validates capability output against them; invalid output is a failed call, never coerced.
 
 
@@ -251,6 +251,29 @@ class RecordEvidenceAck(ToolModel):
     duplicate: bool = False
 
 
+class ThreadMessageView(ToolModel):
+    """One message of a thread as ``read_thread`` returns it (oldest first).
+
+    ``body`` is the stored, sanitised text (``replies.body_sanitized`` for inbound replies, the
+    sent body for outbound). It is UNTRUSTED data either way (ADR-0020); the agents strip
+    instruction-like spans before any model sees it. A leading ``Subject: ...`` line, as stored
+    on replies, is accepted and split off by the agent.
+    """
+
+    message_id: str = Field(min_length=1, max_length=100)
+    direction: Literal["inbound", "outbound"]
+    subject: str = Field(default="", max_length=998)
+    body: str = Field(default="", max_length=50_000)
+    occurred_at: datetime | None = None
+
+
+class ThreadView(ToolModel):
+    thread_ref: str = Field(min_length=1, max_length=500)
+    opportunity_id: UUID | None = None
+    domain: str = Field(default="", max_length=253)
+    messages: tuple[ThreadMessageView, ...] = Field(default=(), max_length=200)
+
+
 class RecordAck(ToolModel):
     record_id: UUID | None = None
     duplicate: bool = False
@@ -299,7 +322,7 @@ TOOL_SPECS: dict[str, ToolSpec] = {
         _spec("read_evidence", ReadEvidenceArgs, EvidenceListData),
         _spec("record_contact_candidates", RecordContactCandidatesArgs, RecordAck, mutating=True),
         _spec("record_draft", RecordDraftArgs, RecordAck, mutating=True),
-        _spec("read_thread", ReadThreadArgs),
+        _spec("read_thread", ReadThreadArgs, ThreadView),
         _spec("record_classification", RecordClassificationArgs, RecordAck, mutating=True),
         _spec("record_negotiation_plan", RecordNegotiationPlanArgs, RecordAck, mutating=True),
         _spec("read_backlink", ReadBacklinkArgs),

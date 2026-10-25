@@ -29,8 +29,10 @@ from kb_runtime.capabilities import CapabilityDeps, build_capabilities
 from kb_runtime.composition import (
     AgentStack,
     CampaignPolicyGate,
+    OutreachStack,
     UowRunStore,
     build_agent_stack,
+    build_outreach_stack,
 )
 from kb_runtime.slice import SliceOutcome, persist_discovery, run_prospect_slice
 
@@ -38,10 +40,12 @@ __all__ = [
     "AgentStack",
     "CampaignPolicyGate",
     "CapabilityDeps",
+    "OutreachStack",
     "SliceOutcome",
     "UowRunStore",
     "build_agent_stack",
     "build_capabilities",
+    "build_outreach_stack",
     "persist_discovery",
     "run_prospect_slice",
 ]

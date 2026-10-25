@@ -21,13 +21,18 @@ Safety properties:
    and malformed-response errors fail at once.
 4. **After SENT.** The first message moves the prospect OUTREACH_READY -> IN_OUTREACH, and the
    next follow-up job is scheduled (`outreach.follow_up`, subject `sequence`, so a terminal
-   sequence cancels it in the same transaction).
+   sequence cancels it in the same transaction). Its `run_at` comes from the campaign policy
+   (`kb_core.outreach.cadence`): `follow_up_delays_days[step - 1]` after the instant the provider
+   accepted this message, moved into the sending window.
+5. **Sending window.** When `begin_send` answers DEFERRED with `not_before` (the dispatch fell
+   outside the window) the message stays QUEUED and a fresh `outreach.send` job is enqueued for
+   that instant; this job then ends normally. Nothing is dropped and nothing goes early.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 
@@ -48,11 +53,15 @@ from kb_contracts.providers import (
 )
 
 from kb_core.db.protocols import UnitOfWork, UnitOfWorkFactory
-from kb_core.errors import DomainConflict, EntityNotFound
-from kb_core.outreach.payloads import OUTREACH_FOLLOW_UP, sequence_concurrency_key
+from kb_core.errors import DomainConflict, EntityNotFound, PolicyUnavailable
+from kb_core.outreach.cadence import plan_after_send
+from kb_core.outreach.payloads import (
+    OUTREACH_FOLLOW_UP,
+    OUTREACH_SEND,
+    sequence_concurrency_key,
+)
 from kb_core.outreach.ports import ACTOR_OUTREACH, TransitionPort
 
-DEFAULT_FOLLOW_UP_DELAY = timedelta(days=4)
 _RETRYABLE = (ProviderUnavailable, RateLimited)
 _TERMINAL_ERRORS = (AuthRequired, NotConfigured, InvalidResponse)
 
@@ -74,6 +83,8 @@ class _BeginLike(Protocol):
     def attempt(self) -> int: ...
     @property
     def decision(self) -> Any: ...
+    @property
+    def not_before(self) -> datetime | None: ...
 
 
 class SendGate(Protocol):
@@ -97,7 +108,7 @@ class SentLookup(Protocol):
 
 @dataclass(frozen=True)
 class SendResult:
-    outcome: str  # sent | already_sent | blocked | not_sendable | failed
+    outcome: str  # sent | already_sent | blocked | not_sendable | failed | deferred
     message: OutreachMessage
     provider_message_id: str | None = None
     duplicate: bool = False
@@ -121,15 +132,12 @@ class DeliveryService:
         gate: SendGate,
         transitions: TransitionPort,
         clock: Clock,
-        *,
-        follow_up_delay: timedelta = DEFAULT_FOLLOW_UP_DELAY,
     ) -> None:
         self._uow_factory = uow_factory
         self._email = email
         self._gate = gate
         self._tr = transitions
         self._clock = clock
-        self._follow_up_delay = follow_up_delay
 
     async def send(
         self, message_id: UUID, *, correlation_id: str, actor: Actor = ACTOR_OUTREACH
@@ -144,6 +152,9 @@ class DeliveryService:
         if outcome == "NOT_SENDABLE":
             return SendResult("not_sendable", message)
         if outcome == "DEFERRED":
+            if begun.not_before is not None:
+                await self._redispatch_at(message, begun.not_before, correlation_id)
+                return SendResult("deferred", message)
             codes = tuple(c.value for c in begun.decision.block_codes) if begun.decision else ()
             raise SendDeferred(codes)
 
@@ -179,7 +190,8 @@ class DeliveryService:
             provider_message_id=receipt.provider_message_id,
             correlation_id=correlation_id,
         )
-        await self._after_sent(sent, actor, correlation_id)
+        sent_at = self._clock.now()  # the previous successful send, the base of the next delay
+        await self._after_sent(sent, sent_at, actor, correlation_id)
         return SendResult("sent", sent, receipt.provider_message_id, receipt.duplicate)
 
     async def _addressing(self, message: OutreachMessage) -> tuple[str, str | None]:
@@ -211,7 +223,28 @@ class DeliveryService:
             )
         )
 
-    async def _after_sent(self, sent: OutreachMessage, actor: Actor, correlation_id: str) -> None:
+    async def _redispatch_at(
+        self, message: OutreachMessage, not_before: datetime, correlation_id: str
+    ) -> None:
+        """Re-enqueue the dispatch for the next in-window instant. Idempotent per instant."""
+        async with self._uow_factory() as uow:
+            await uow.jobs.enqueue(
+                job_type=OUTREACH_SEND,
+                payload={
+                    "message_id": str(message.id),
+                    "sequence_id": str(message.sequence_id),
+                    "correlation_id": correlation_id,
+                },
+                run_at=not_before,
+                idempotency_key=f"{OUTREACH_SEND}:{message.id}:{not_before.isoformat()}",
+                concurrency_key=sequence_concurrency_key(message.sequence_id),
+                subject_type="sequence",
+                subject_id=message.sequence_id,
+            )
+
+    async def _after_sent(
+        self, sent: OutreachMessage, sent_at: datetime, actor: Actor, correlation_id: str
+    ) -> None:
         async with self._uow_factory() as uow:
             seq = await uow.sequences.get(sent.sequence_id)
             assert seq is not None
@@ -225,17 +258,23 @@ class DeliveryService:
                     reason="first message sent",
                     correlation_id=correlation_id,
                 )
-            due = self._clock.now() + self._follow_up_delay
-            await uow.sequences.set_next_due(seq.id, run_at=due)
+            version = await uow.policies.active_version_for_campaign(seq.campaign_id)
+            if version is None:
+                raise PolicyUnavailable(f"no effective policy for campaign {seq.campaign_id}")
+            plan = plan_after_send(version.body, sent_step_no=sent.step_no, sent_at=sent_at)
+            if plan is None:
+                await uow.sequences.set_next_due(seq.id, run_at=None)
+                return
+            await uow.sequences.set_next_due(seq.id, run_at=plan.run_at)
             await uow.jobs.enqueue(
                 job_type=OUTREACH_FOLLOW_UP,
                 payload={
                     "sequence_id": str(seq.id),
-                    "step_no": sent.step_no + 1,
+                    "step_no": plan.step_no,
                     "correlation_id": correlation_id,
                 },
-                run_at=due,
-                idempotency_key=f"{OUTREACH_FOLLOW_UP}:{seq.id}:{sent.step_no + 1}",
+                run_at=plan.run_at,
+                idempotency_key=f"{OUTREACH_FOLLOW_UP}:{seq.id}:{plan.step_no}",
                 concurrency_key=sequence_concurrency_key(seq.id),
                 subject_type="sequence",
                 subject_id=seq.id,

@@ -45,7 +45,7 @@ pipe `check.sh`; capture its exit code.
 |---|---|
 | Metric three-state through the real UoW | `latest()` returned `{domain_authority: 55.0, spam_score: None}` with `trust_flow` **absent** — all three states distinct |
 | UoW transition+audit atomicity | audit row visible inside the transaction (1), **gone after rollback** (0) |
-| Seed `content_hash` | recomputed independently, matches `sha256:e6e54ac6b44bdb3901e6569b6ac41bb8b2b1c422e475c843cfe14c99f7b71b48` |
+| Seed `content_hash` | recomputed independently and matched at the time. **The value changed with CCR-004** (the hash digests the policy body, which gained five fields); it is now `sha256:cfbb802e0775acc119bbaa5956fedfe2b10abecf9ee18ddc111eab0e80ae4fca` |
 | Four DEFER shapes | 3 fetched-but-unavailable + 1 never-fetched all DEFER; only a fully-metricked domain passes |
 | Prompt-injection inertness | adversarially re-tested across all three injection sites and every declared page; no bait text reaches topics/title/evidence, no `attacker.example` contact |
 | Tool-scope enforcement (Lane D) | probed adversarially: executable capabilities registered under **all 7 forbidden names**, **0 executions** across 70 agent×capability combinations; out-of-scope tools never reach a capability; `OUTREACH` refused both `send_email_direct` and `request_send`; 313 calls audited |

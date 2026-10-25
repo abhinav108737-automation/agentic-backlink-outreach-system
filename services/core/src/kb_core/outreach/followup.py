@@ -3,12 +3,30 @@
 Safe to redeliver and safe against races with replies: a sequence that is no longer waiting
 (replied, opted out, bounced, cancelled, completed) is a no-op, so a follow-up can never be
 drafted after a reply or opt-out even if its job survived cancellation.
+
+Stop conditions (CCR-004). A follow-up never proceeds after a reply, an opt-out or a bounce:
+the sequence is no longer waiting, so the run is a no-op and the terminal transition already
+cancelled the job.
+
+The remaining stop conditions are deliberately NOT all the same kind of stop:
+
+* **Suppression cancels the sequence.** The recipient asked not to be contacted, so there is
+  nothing to resume and CANCELLED (terminal) is correct. It also cancels the sequence's other
+  pending jobs in the same transaction.
+* **A paused campaign or an active kill switch HOLDS the sequence.** Both are reversible
+  operator controls — `docs/13` defines campaign status as `ACTIVE ⇄ PAUSED`, and a kill switch
+  exists to be released. Cancelling here would terminally destroy every in-flight sequence the
+  moment an operator paused a campaign, and resuming would bring none of them back. So the
+  sequence keeps its waiting state and the timer is re-armed for a later check.
+
+Any other block (a sender or limit problem, say) is transient and the job retries with bounded
+backoff.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from kb_contracts.enums import SequenceStatus
@@ -17,16 +35,28 @@ from kb_contracts.policy import BlockCode, PolicyCheckRequest, PolicyEngine
 
 from kb_core.db.protocols import UnitOfWorkFactory
 from kb_core.errors import DomainConflict, EntityNotFound, PolicyUnavailable
-from kb_core.outreach.payloads import OUTREACH_DRAFT, sequence_concurrency_key
+from kb_core.outreach.payloads import (
+    OUTREACH_DRAFT,
+    OUTREACH_FOLLOW_UP,
+    sequence_concurrency_key,
+)
 from kb_core.outreach.ports import ACTOR_OUTREACH, TransitionPort
 from kb_core.outreach.send import load_channel
 
 _WAITING = (SequenceStatus.WAITING_REPLY, SequenceStatus.FOLLOW_UP_DUE)
+# Permanent: the recipient is off limits, so the sequence is over.
+CANCELLING_CODES = frozenset({BlockCode.SUPPRESSED})
+# Reversible operator controls: hold the sequence, never destroy it.
+HOLDING_CODES = frozenset({BlockCode.CAMPAIGN_PAUSED, BlockCode.KILL_SWITCH_ACTIVE})
+# How far out to re-arm the timer while a hold is in force. Re-arming rather than raising keeps
+# a long pause from burning the job's bounded retries and dead-lettering the sequence.
+HOLD_RECHECK = timedelta(hours=6)
+STOP_CODES = CANCELLING_CODES | HOLDING_CODES
 
 
 @dataclass(frozen=True)
 class FollowUpResult:
-    outcome: str  # drafted | completed | skipped | cancelled
+    outcome: str  # drafted | completed | skipped | cancelled | held
 
 
 class FollowUpService:
@@ -98,17 +128,48 @@ class FollowUpService:
                 )
             )
             if not decision.allowed:
-                if BlockCode.SUPPRESSED in decision.block_codes:
+                codes = ",".join(c.value for c in decision.block_codes)
+                if CANCELLING_CODES.intersection(decision.block_codes):
                     await self._tr.transition_in(
                         uow,
                         seq,
                         SequenceStatus.CANCELLED,
                         actor=actor,
-                        reason="follow-up blocked: suppressed",
+                        reason=f"follow-up stopped: {codes}",
                         correlation_id=correlation_id,
                     )
                     return FollowUpResult("cancelled")
-                codes = ",".join(c.value for c in decision.block_codes)
+                if HOLDING_CODES.intersection(decision.block_codes):
+                    # Hold, do not cancel: both conditions are reversible. Re-arm the timer and
+                    # audit the hold so the pause is visible without losing the sequence.
+                    recheck = run_at_now + HOLD_RECHECK
+                    await uow.sequences.set_next_due(seq.id, run_at=recheck)
+                    await uow.jobs.enqueue(
+                        job_type=OUTREACH_FOLLOW_UP,
+                        payload={
+                            "sequence_id": str(seq.id),
+                            "step_no": step_no,
+                            "correlation_id": correlation_id,
+                        },
+                        run_at=recheck,
+                        idempotency_key=(
+                            f"{OUTREACH_FOLLOW_UP}:{seq.id}:{step_no}:hold:{recheck.isoformat()}"
+                        ),
+                        concurrency_key=sequence_concurrency_key(seq.id),
+                        subject_type="sequence",
+                        subject_id=seq.id,
+                    )
+                    await uow.audit.append(
+                        actor_type=actor.actor_type.value,
+                        actor_id=actor.actor_id,
+                        action="follow_up.held",
+                        subject_type="outreach_sequence",
+                        subject_id=seq.id,
+                        correlation_id=correlation_id,
+                        new_state={"codes": codes, "recheck_at": recheck.isoformat()},
+                        reason=f"follow-up held (reversible): {codes}",
+                    )
+                    return FollowUpResult("held")
                 raise DomainConflict("FOLLOW_UP_BLOCKED", f"follow-up deferred: {codes}")
 
             await uow.jobs.enqueue(

@@ -202,3 +202,35 @@ async def agent_run(seeded: SqlUnitOfWorkFactory, campaign: uuid.UUID) -> uuid.U
             provider=None,
             correlation_id="i1-probe",
         )
+
+
+# ---- I2 (Wave 2B) ---------------------------------------------------------------------
+# The worker-side composition root, bound to the fixture-backed mocks and a deterministic
+# model. There is no code path from here to a real mail server.
+
+from kb_core.scheduling.worker import JobWorker  # noqa: E402
+from kb_runtime import OutreachStack, build_outreach_stack  # noqa: E402
+
+
+@pytest.fixture
+def clock() -> FakeClock:
+    return FakeClock()
+
+
+@pytest.fixture
+def outreach(seeded: SqlUnitOfWorkFactory, campaign: uuid.UUID, clock: FakeClock) -> OutreachStack:
+    return build_outreach_stack(
+        settings=Settings(_env_file=None),
+        uow_factory=seeded,
+        clock=clock,
+        fixture_root=FIXTURES,
+        model=FakeModelProvider(seed=23),
+        campaign_id=campaign,
+    )
+
+
+@pytest.fixture
+def worker(seeded: SqlUnitOfWorkFactory, outreach: OutreachStack, clock: FakeClock) -> JobWorker:
+    """The real bounded worker over the real registry — not a hand-rolled dispatcher, so the
+    tests exercise claim/lease/retry exactly as production would."""
+    return JobWorker(seeded, clock, outreach.registry, lease_owner="e2e", batch_size=20)
