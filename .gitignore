@@ -42,3 +42,6 @@ logs/
 
 # Archives (handoff zip is kept on disk under docs/reference/source but not tracked)
 *.zip
+
+# Word lock files
+~$*.docx
