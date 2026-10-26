@@ -82,6 +82,25 @@ to http(s), no policy override, no direct email send.
 - **No seeded kill-switch row**; absent means off. A malformed row counts as active (fail closed).
 - **`policies/**` is empty** — policy YAML is a backlog item, not used.
 
+## Pilot (manager review, 19-24 Oct) — plan proposed 2026-10-26
+Measurable pilot definition in `docs/16_PILOT_PLAN.md`. Three staged gates with explicit
+acceptance criteria; funnel measures defined so a prospect or a sent message can never be
+counted as a backlink.
+- [x] Audit of what the review asked for vs what is already built: human approval, duplicate
+      check, opt-out/suppression, failure queue, relevance + editorial fit, VERIFIED-only — all
+      present and defaulting to fail closed
+- [x] Zero-paid-API assumption validated: holds everywhere **except** authoritative DA/Spam Score,
+      which has no zero-cost legal source. Pilot uses manual CSV import (zero incremental cost)
+- [x] 5,000-lead ambition decomposed: at <=25 sends/day and 1/domain, 5,000 approved sends is
+      ~200 sending days. Proposal is to replace it with measured weekly rates
+- [ ] **Blocks Stage C (live sends):** no real EmailProvider exists (mock only) — must be built
+      and credentialed
+- [ ] **Blocks Stage C:** DB role separation (already recorded as a live-send blocker)
+- [ ] **Blocks Stage A:** finish the I2 acceptance suite (currently 2 of 14)
+- [ ] **Needs input, not guessable:** current manual baseline (links/month, hours/link), Shrey's
+      scope and 26 Oct first-output plan, metrics-source owner
+- [ ] Align PRD + ownership + first milestone with Shrey into one plan
+
 ## Epic 8 Digital PR / Earned Media channel (PROPOSED — planning only, nothing implemented)
 Architecture proposal complete 2026-10-25; **no code, no contract change, no migration**. Contracts
 remain frozen at `0.4.0`. Sequenced strictly **after I2** so Wave 2B is not disturbed.
